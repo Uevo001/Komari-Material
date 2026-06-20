@@ -1,11 +1,45 @@
 import {
   argbFromHex,
   hexFromArgb,
+  sourceColorFromImage,
   themeFromSourceColor,
 } from '@material/material-color-utilities'
 
 export const DEFAULT_MATERIAL_SEED_COLOR = '#006A60'
 export type MaterialDensity = 'compact' | 'comfortable'
+export type MonetColorMode = 'seed' | 'palette' | 'wallpaper'
+export type MonetPaletteName = keyof typeof MONET_PALETTES
+
+export const MONET_PALETTES = {
+  'material-teal': {
+    name: 'Material Teal',
+    seedColor: DEFAULT_MATERIAL_SEED_COLOR,
+  },
+  'ocean-blue': {
+    name: 'Ocean Blue',
+    seedColor: '#006CBA',
+  },
+  'forest-green': {
+    name: 'Forest Green',
+    seedColor: '#386A20',
+  },
+  'sunset-orange': {
+    name: 'Sunset Orange',
+    seedColor: '#A23F00',
+  },
+  'rose-pink': {
+    name: 'Rose Pink',
+    seedColor: '#B71B5C',
+  },
+  'violet-purple': {
+    name: 'Violet Purple',
+    seedColor: '#6B4EA0',
+  },
+  'slate-gray': {
+    name: 'Slate Gray',
+    seedColor: '#5D6C7A',
+  },
+} as const
 
 export interface MaterialChartColors {
   primary: string
@@ -29,6 +63,7 @@ export interface MaterialThemeTokens {
 }
 
 const HEX_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i
+const IMAGE_LOAD_TIMEOUT_MS = 15000
 
 const COLOR_MAPPINGS: Array<[string, string]> = [
   ['primary', 'primary'],
@@ -199,6 +234,51 @@ export function normalizeHexColor(value: unknown, fallback = DEFAULT_MATERIAL_SE
   return trimmed.toUpperCase()
 }
 
+export function isMonetColorMode(value: unknown): value is MonetColorMode {
+  return value === 'seed' || value === 'palette' || value === 'wallpaper'
+}
+
+export function resolveMonetPaletteSeed(value: unknown, fallback = DEFAULT_MATERIAL_SEED_COLOR): string {
+  if (typeof value !== 'string') {
+    return fallback
+  }
+
+  const palette = MONET_PALETTES[value as MonetPaletteName]
+  return palette ? palette.seedColor : fallback
+}
+
+function loadImageForColorExtraction(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    const timeoutId = window.setTimeout(() => {
+      image.onload = null
+      image.onerror = null
+      reject(new Error('Image color extraction timed out'))
+    }, IMAGE_LOAD_TIMEOUT_MS)
+
+    image.crossOrigin = 'anonymous'
+    image.onload = () => {
+      window.clearTimeout(timeoutId)
+      resolve(image)
+    }
+    image.onerror = () => {
+      window.clearTimeout(timeoutId)
+      reject(new Error('Image color extraction failed'))
+    }
+    image.src = url
+  })
+}
+
+export async function extractMaterialSeedColorFromImageUrl(url: string): Promise<string> {
+  const trimmedUrl = url.trim()
+  if (!trimmedUrl) {
+    throw new Error('Image URL is empty')
+  }
+
+  const image = await loadImageForColorExtraction(trimmedUrl)
+  return hexFromArgb(await sourceColorFromImage(image)).toUpperCase()
+}
+
 export function buildMaterialThemeTokens(
   seedColor: string,
   isDark: boolean,
@@ -245,13 +325,21 @@ export function buildMaterialThemeTokens(
     '--md-app-card-padding': density === 'compact' ? '14px' : '18px',
     '--md-app-grid-gap': density === 'compact' ? '12px' : '16px',
     '--md-app-row-height': density === 'compact' ? '56px' : '68px',
-    '--md-app-card-radius': '20px',
-    '--md-app-card-radius-small': '16px',
+    '--md-app-card-radius': '12px',
+    '--md-app-card-radius-small': '8px',
+    '--md-app-card-radius-large': '16px',
     '--md-app-control-radius': '999px',
-    '--md-app-elevation-1': `0 1px 2px color-mix(in srgb, ${colors.shadow} 18%, transparent), 0 1px 3px color-mix(in srgb, ${colors.shadow} 10%, transparent)`,
-    '--md-app-elevation-2': `0 2px 6px color-mix(in srgb, ${colors.shadow} 18%, transparent), 0 4px 12px color-mix(in srgb, ${colors.shadow} 10%, transparent)`,
+    '--md-app-elevation-1': `0 1px 2px color-mix(in srgb, ${colors.shadow} 30%, transparent), 0 1px 3px 1px color-mix(in srgb, ${colors.shadow} 15%, transparent)`,
+    '--md-app-elevation-2': `0 1px 2px color-mix(in srgb, ${colors.shadow} 30%, transparent), 0 2px 6px 2px color-mix(in srgb, ${colors.shadow} 15%, transparent)`,
+    '--md-app-elevation-3': `0 4px 8px 3px color-mix(in srgb, ${colors.shadow} 15%, transparent), 0 1px 3px color-mix(in srgb, ${colors.shadow} 30%, transparent)`,
     '--md-app-state-hover': '0.08',
     '--md-app-state-focus': '0.12',
+    '--md-app-state-pressed': '0.12',
+    '--md-app-state-dragged': '0.16',
+    '--md-app-motion-easing-standard': 'cubic-bezier(0.2, 0, 0, 1)',
+    '--md-app-motion-easing-emphasized': 'cubic-bezier(0.2, 0, 0, 1)',
+    '--md-app-motion-duration-short': '150ms',
+    '--md-app-motion-duration-medium': '250ms',
     '--md-app-font-family': '"MiSans VF", "Google Sans", system-ui, sans-serif',
     '--md-app-number-font-family': '"TCloud Number VF", "MiSans VF", system-ui, sans-serif',
     '--md-chart-primary': chartColors.primary,
@@ -297,7 +385,7 @@ export function applyMaterialThemeTokens(tokens: MaterialThemeTokens, root = doc
   // 兼容少量旧样式变量，迁移期避免遗漏处直接崩样式。
   root.style.setProperty('--n-color', tokens.colors.surface!)
   root.style.setProperty('--n-color-hover', tokens.colors['surface-container-high']!)
-  root.style.setProperty('--n-border-radius', '20px')
+  root.style.setProperty('--n-border-radius', '12px')
   root.style.setProperty('--n-border-color', tokens.colors['outline-variant']!)
   root.style.setProperty('--n-text-color-1', tokens.colors['on-surface']!)
   root.style.setProperty('--n-text-color-2', tokens.colors['on-surface-variant']!)

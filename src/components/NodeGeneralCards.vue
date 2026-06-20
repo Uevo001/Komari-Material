@@ -171,7 +171,7 @@ const cardBlurClass = computed(() => {
   min-width: 0;
   color: var(--md-sys-color-on-surface);
   font-size: 18px;
-  font-weight: 760;
+  font-weight: 500;
   line-height: 1.1;
   word-break: break-word;
 
@@ -192,7 +192,7 @@ const cardBlurClass = computed(() => {
   gap: 6px;
   color: var(--md-sys-color-on-surface-variant);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .general-card__metric-stack {

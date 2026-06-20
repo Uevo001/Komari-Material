@@ -255,13 +255,11 @@ onUnmounted(() => {
   box-shadow: var(--md-app-elevation-2);
   cursor: pointer;
   transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    background-color 160ms ease;
+    box-shadow var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px color-mix(in srgb, var(--md-sys-color-shadow) 22%, transparent);
+    box-shadow: var(--md-app-elevation-3);
   }
 }
 
@@ -293,7 +291,7 @@ onUnmounted(() => {
 }
 
 .material-snackbar--success .material-snackbar__icon {
-  color: #8dd7a5;
+  color: var(--md-chart-success);
 }
 
 .material-snackbar--error .material-snackbar__icon {
@@ -301,7 +299,7 @@ onUnmounted(() => {
 }
 
 .material-snackbar--warning .material-snackbar__icon {
-  color: #ffb95c;
+  color: var(--md-chart-warning);
 }
 
 .material-snackbar--info .material-snackbar__icon {
@@ -317,7 +315,6 @@ onUnmounted(() => {
   justify-content: center;
   padding: 24px;
   background: color-mix(in srgb, var(--md-sys-color-scrim) 42%, transparent);
-  backdrop-filter: blur(8px);
 }
 
 .material-modal-card {
@@ -329,7 +326,7 @@ onUnmounted(() => {
   border-radius: 28px;
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface-container-high);
-  box-shadow: 0 12px 36px color-mix(in srgb, var(--md-sys-color-shadow) 28%, transparent);
+  box-shadow: var(--md-app-elevation-3);
 }
 
 .material-modal-card__header {
@@ -367,8 +364,8 @@ onUnmounted(() => {
 .snackbar-enter-active,
 .snackbar-leave-active {
   transition:
-    opacity 180ms ease,
-    transform 180ms ease;
+    opacity var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    transform var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 }
 
 .loading-bar-enter-from,

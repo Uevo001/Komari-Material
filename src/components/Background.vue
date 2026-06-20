@@ -23,7 +23,9 @@ const overlayStyle = computed(() => {
   }
 
   return {
-    backgroundColor: `rgba(0, 0, 0, ${appStore.backgroundOverlay / 100})`,
+    backgroundColor: appStore.isDark
+      ? `rgba(0, 0, 0, ${appStore.backgroundOverlay / 100})`
+      : `rgba(255, 255, 255, ${appStore.backgroundOverlay / 100})`,
   }
 })
 
@@ -201,54 +203,21 @@ onUnmounted(() => {
   height: 100%;
 }
 
-// 默认背景：使用 Material 动态色的柔和 surface 层
+// 默认背景：使用 Material tonal surface，避免在未配置壁纸时引入额外视觉风格。
 .background-default {
-  background: linear-gradient(
-    135deg,
-    var(--md-sys-color-surface) 0%,
-    var(--md-sys-color-surface-container-low) 28%,
-    color-mix(in srgb, var(--md-sys-color-primary-container) 62%, var(--md-sys-color-surface)) 64%,
-    var(--md-sys-color-surface-container-high) 100%
-  );
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
+  background: var(--md-sys-color-surface-container-lowest);
 }
 
 html.dark .background-default {
-  background: linear-gradient(
-    135deg,
-    var(--md-sys-color-surface-dim) 0%,
-    var(--md-sys-color-surface-container-low) 30%,
-    color-mix(in srgb, var(--md-sys-color-primary-container) 44%, var(--md-sys-color-surface)) 68%,
-    var(--md-sys-color-surface-container-high) 100%
-  );
-  background-size: 400% 400%;
-  animation: gradientShift 20s ease infinite;
+  background: var(--md-sys-color-surface-dim);
 }
 
 .background-loading {
-  background: linear-gradient(135deg, var(--md-sys-color-surface) 0%, var(--md-sys-color-primary-container) 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
+  background: var(--md-sys-color-surface-container-low);
 }
 
 html.dark .background-loading {
-  background: linear-gradient(135deg, var(--md-sys-color-surface-dim) 0%, var(--md-sys-color-primary-container) 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 20s ease infinite;
-}
-
-// 渐变动画
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  background: var(--md-sys-color-surface-container);
 }
 
 .background-media {
@@ -286,7 +255,7 @@ html.dark .background-loading {
 // 过渡动画
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.8s ease;
+  transition: opacity var(--md-app-motion-duration-medium) var(--md-app-motion-easing-standard);
 }
 
 .fade-enter-from,

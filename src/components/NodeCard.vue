@@ -4,7 +4,7 @@ import { computed, h } from 'vue'
 import PingChart from '@/components/PingChart.vue'
 import TrafficProgress from '@/components/TrafficProgress.vue'
 import { useAppStore } from '@/stores/app'
-import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
+import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, getStatus } from '@/utils/helper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
 import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
 import { formatPriceWithCycle, getDaysUntilExpired, getExpireStatus, getExpireStatusHexColor, parseTags } from '@/utils/tagHelper'
@@ -22,7 +22,6 @@ const themeColors = computed(() => appStore.materialThemeTokens.chartColors)
 
 const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
 const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
-const formatUptime = (seconds: number) => formatUptimeWithFormat(seconds, appStore.uptimeFormat)
 const offlineTime = computed(() => formatDateTime(props.node.time))
 
 const cpuStatus = computed(() => getStatus(props.node.cpu ?? 0))
@@ -109,7 +108,6 @@ const customTags = computed(() => {
 })
 
 const mergedTags = computed(() => [...customTags.value, ...priceTags.value])
-const shouldShowTagsInSeparateRow = computed(() => appStore.tagsInSeparateRow && mergedTags.value.length > 0)
 const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
 const cardBlurClass = computed(() => {
   if (!hasBackgroundBlur.value)
@@ -137,8 +135,8 @@ function statusColor(status: 'success' | 'warning' | 'error') {
 function tagStyle(color: string) {
   return {
     color,
-    backgroundColor: `${color}20`,
-    borderColor: `${color}44`,
+    backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
+    borderColor: `color-mix(in srgb, ${color} 32%, var(--md-sys-color-outline-variant))`,
   }
 }
 
@@ -163,11 +161,6 @@ function openPingChart() {
     <header class="node-card__header">
       <div class="node-card__identity">
         <img class="node-card__flag" :src="`/images/flags/${getRegionCode(props.node.region)}.svg`" :alt="getRegionDisplayName(props.node.region)">
-        <div v-if="customTags.length > 0 && !appStore.tagsInSeparateRow" class="node-card__hover-tags">
-          <span v-for="(tag, index) in customTags" :key="index" class="md-chip" :style="tagStyle(tag.color)">
-            {{ tag.text }}
-          </span>
-        </div>
         <h3 class="node-card__name">
           {{ props.node.name }}
         </h3>
@@ -184,12 +177,12 @@ function openPingChart() {
         >
           <span class="material-symbols-rounded">show_chart</span>
         </button>
-        <span
-          class="node-card__status-dot"
-          :class="{ 'node-card__status-dot--online': props.node.online }"
-          :style="{ backgroundColor: props.node.online ? themeColors.success : themeColors.error }"
-          :title="props.node.online ? '在线' : '离线'"
-        />
+        <img
+          class="node-card__os-logo"
+          :src="getOSImage(props.node.os)"
+          :alt="getOSName(props.node.os)"
+          :title="`${getOSName(props.node.os)} / ${props.node.arch}`"
+        >
       </div>
     </header>
 
@@ -202,20 +195,12 @@ function openPingChart() {
           </div>
           <strong>节点已离线</strong>
           <span class="md-number">最后在线 {{ offlineTime }}</span>
-          <div v-if="!appStore.tagsInSeparateRow && priceTags.length > 0" class="node-card__tag-row node-card__tag-row--center">
-            <span v-for="(tag, index) in priceTags" :key="index" class="md-chip" :style="tagStyle(tag.color)">
+          <div v-if="mergedTags.length > 0" class="node-card__tag-row node-card__tag-row--center">
+            <span v-for="(tag, index) in mergedTags" :key="index" class="md-chip" :style="tagStyle(tag.color)">
               {{ tag.text }}
             </span>
           </div>
         </div>
-      </div>
-
-      <div class="node-card__row">
-        <span class="md-label">操作系统</span>
-        <span class="node-card__os">
-          <img :src="getOSImage(props.node.os)" :alt="getOSName(props.node.os)">
-          <span>{{ getOSName(props.node.os) }} / {{ props.node.arch }}</span>
-        </span>
       </div>
 
       <div class="node-card__resource-grid" :class="appStore.cardProgressLayout === '1col' ? 'node-card__resource-grid--single' : ''">
@@ -283,20 +268,7 @@ function openPingChart() {
         </span>
       </div>
 
-      <div class="node-card__row">
-        <span class="md-label">运行时间</span>
-        <span class="node-card__uptime">
-          <template v-if="!shouldShowTagsInSeparateRow">
-            <span v-for="(tag, index) in priceTags" :key="index" class="md-chip" :style="tagStyle(tag.color)">
-              {{ tag.text }}
-            </span>
-          </template>
-          <span v-if="appStore.uptimeTagWrap" class="md-chip">{{ formatUptime(props.node.uptime ?? 0) }}</span>
-          <span v-else class="md-number">{{ formatUptime(props.node.uptime ?? 0) }}</span>
-        </span>
-      </div>
-
-      <div v-if="shouldShowTagsInSeparateRow" class="node-card__row node-card__row--tags">
+      <div v-if="mergedTags.length > 0" class="node-card__row node-card__row--tags">
         <span class="md-label">标签</span>
         <span class="node-card__tag-row">
           <span v-for="(tag, index) in mergedTags" :key="index" class="md-chip" :style="tagStyle(tag.color)">
@@ -342,7 +314,7 @@ function openPingChart() {
   margin: 0;
   color: var(--md-sys-color-on-surface);
   font-size: 17px;
-  font-weight: 720;
+  font-weight: 500;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -360,21 +332,11 @@ function openPingChart() {
   height: 34px;
 }
 
-.node-card__status-dot {
-  position: relative;
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-}
-
-.node-card__status-dot--online::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: inherit;
-  opacity: 0.42;
-  animation: node-status-wave 1.6s infinite ease-out;
+.node-card__os-logo {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  object-fit: contain;
 }
 
 .node-card__content {
@@ -394,9 +356,7 @@ function openPingChart() {
   gap: 12px;
 }
 
-.node-card__os,
 .node-card__rate,
-.node-card__uptime,
 .node-card__tag-row {
   display: inline-flex;
   min-width: 0;
@@ -406,12 +366,6 @@ function openPingChart() {
   gap: 6px;
   color: var(--md-sys-color-on-surface);
   font-size: 13px;
-}
-
-.node-card__os img {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
 }
 
 .node-card__resource-grid {
@@ -449,32 +403,6 @@ function openPingChart() {
   width: 6px;
 }
 
-.node-card__hover-tags {
-  position: absolute;
-  left: -1px;
-  right: -160px;
-  bottom: -52px;
-  z-index: 3;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 10px;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 84%, transparent);
-  backdrop-filter: blur(12px);
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(6px);
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease;
-}
-
-.node-card:hover .node-card__hover-tags {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .node-card__offline-overlay {
   position: absolute;
   inset: 0;
@@ -484,10 +412,9 @@ function openPingChart() {
   justify-content: center;
   padding: 24px;
   border-radius: 0 0 var(--md-app-card-radius) var(--md-app-card-radius);
-  background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 82%, transparent);
-  backdrop-filter: blur(18px);
+  background: var(--md-sys-color-surface-container-high);
   pointer-events: none;
-  transition: opacity 180ms ease;
+  transition: opacity var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 }
 
 .node-card:hover .node-card__offline-overlay {
@@ -517,17 +444,10 @@ function openPingChart() {
   justify-content: center;
   gap: 8px;
   color: var(--md-sys-color-on-surface);
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .node-card__tag-row--center {
   justify-content: center;
-}
-
-@keyframes node-status-wave {
-  to {
-    opacity: 0;
-    transform: scale(2.8);
-  }
 }
 </style>

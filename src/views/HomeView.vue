@@ -120,6 +120,11 @@ function updateSearch(event: Event) {
   searchText.value = (event.target as HTMLInputElement).value
 }
 
+function clearSearch() {
+  searchText.value = ''
+  debouncedSearchText.value = ''
+}
+
 function handleNodeClick(node: typeof nodesStore.nodes[number]) {
   router.push({ name: 'instance-detail', params: { id: node.uuid } })
 }
@@ -153,49 +158,61 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
     <section class="node-info">
       <div class="node-toolbar">
-        <label class="node-toolbar__search" aria-label="搜索节点">
-          <span class="material-symbols-rounded" aria-hidden="true">search</span>
-          <input
-            type="search"
-            placeholder="搜索节点名称、地区、系统"
-            :value="searchText"
-            @input="updateSearch"
-          >
-        </label>
-
-        <div class="md-segmented-control" role="group" aria-label="节点视图">
+        <div v-if="showGroupTabs" class="md-tab-row node-toolbar__groups" aria-label="节点分组">
           <button
-            class="md-segmented-control__button"
-            :class="{ 'is-active': appStore.nodeViewMode === 'card' }"
+            v-for="group in groups"
+            :key="group.name"
+            class="md-tab-button"
+            :class="{ 'is-active': appStore.nodeSelectedGroup === group.name }"
             type="button"
-            title="卡片视图"
-            @click="appStore.nodeViewMode = 'card'"
+            @click="appStore.nodeSelectedGroup = group.name"
           >
-            <span class="material-symbols-rounded">grid_view</span>
-          </button>
-          <button
-            class="md-segmented-control__button"
-            :class="{ 'is-active': appStore.nodeViewMode === 'list' }"
-            type="button"
-            title="列表视图"
-            @click="appStore.nodeViewMode = 'list'"
-          >
-            <span class="material-symbols-rounded">view_list</span>
+            {{ group.tab }}
           </button>
         </div>
-      </div>
 
-      <div v-if="showGroupTabs" class="md-tab-row" aria-label="节点分组">
-        <button
-          v-for="group in groups"
-          :key="group.name"
-          class="md-tab-button"
-          :class="{ 'is-active': appStore.nodeSelectedGroup === group.name }"
-          type="button"
-          @click="appStore.nodeSelectedGroup = group.name"
-        >
-          {{ group.tab }}
-        </button>
+        <div class="node-toolbar__actions">
+          <label class="node-toolbar__search" aria-label="搜索节点">
+            <span class="material-symbols-rounded" aria-hidden="true">search</span>
+            <input
+              type="search"
+              placeholder="搜索节点名称、地区、系统"
+              :value="searchText"
+              @input="updateSearch"
+            >
+            <button
+              v-if="searchText"
+              class="node-toolbar__search-clear"
+              type="button"
+              aria-label="清空搜索"
+              title="清空搜索"
+              @click="clearSearch"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">close</span>
+            </button>
+          </label>
+
+          <div class="md-segmented-control node-toolbar__view-toggle" role="group" aria-label="节点视图">
+            <button
+              class="md-segmented-control__button"
+              :class="{ 'is-active': appStore.nodeViewMode === 'card' }"
+              type="button"
+              title="卡片视图"
+              @click="appStore.nodeViewMode = 'card'"
+            >
+              <span class="material-symbols-rounded">grid_view</span>
+            </button>
+            <button
+              class="md-segmented-control__button"
+              :class="{ 'is-active': appStore.nodeViewMode === 'list' }"
+              type="button"
+              title="列表视图"
+              @click="appStore.nodeViewMode = 'list'"
+            >
+              <span class="material-symbols-rounded">view_list</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="nodes">
@@ -222,11 +239,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 .home-view__divider {
   height: 1px;
   margin: 0 16px;
-  background: repeating-linear-gradient(
-    to right,
-    color-mix(in srgb, var(--md-sys-color-outline-variant) 82%, transparent) 0 8px,
-    transparent 8px 14px
-  );
+  background: var(--md-sys-color-outline-variant);
 }
 
 .node-info {
@@ -237,34 +250,53 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 }
 
 .node-toolbar {
+  --node-toolbar-control-height: 40px;
+
   display: flex;
-  gap: 10px;
+  flex-wrap: nowrap;
+  gap: 12px;
   align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.node-toolbar__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .node-toolbar__search {
   position: relative;
   display: flex;
-  flex: 1;
-  min-width: 0;
-  height: var(--md-app-control-height);
+  flex: 0 1 420px;
+  min-width: 220px;
+  max-width: 520px;
+  height: var(--node-toolbar-control-height);
   align-items: center;
   gap: 10px;
-  border: 1px solid var(--md-sys-color-outline);
-  border-radius: var(--md-sys-shape-corner-medium);
-  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 6px 0 16px;
   color: var(--md-sys-color-on-surface-variant);
-  background: color-mix(in srgb, var(--md-sys-color-surface-container-low) 86%, transparent);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-sys-color-outline-variant) 42%, transparent);
   transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background 160ms ease;
+    border-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    box-shadow var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    background var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 
   &:focus-within {
     border-color: var(--md-sys-color-primary);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent);
+    box-shadow:
+      inset 0 0 0 1px var(--md-sys-color-primary),
+      0 0 0 3px color-mix(in srgb, var(--md-sys-color-primary) 14%, transparent);
     color: var(--md-sys-color-primary);
-    background: var(--md-sys-color-surface-container-low);
+    background: var(--md-sys-color-surface-container-highest);
   }
 
   .material-symbols-rounded {
@@ -280,11 +312,67 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
     color: var(--md-sys-color-on-surface);
     background: transparent;
     font: inherit;
+    font-size: 14px;
+    line-height: 1.4;
 
     &::placeholder {
       color: var(--md-sys-color-on-surface-variant);
-      opacity: 0.78;
+      opacity: 0.72;
     }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+}
+
+.node-toolbar__search-clear {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  color: var(--md-sys-color-on-surface-variant);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+
+  &:hover {
+    color: var(--md-sys-color-on-surface);
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+  }
+
+  .material-symbols-rounded {
+    font-size: 20px;
+  }
+}
+
+.node-toolbar__view-toggle {
+  height: var(--node-toolbar-control-height);
+}
+
+.node-toolbar__groups {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--node-toolbar-control-height);
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 0;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .md-tab-button {
+    min-height: var(--node-toolbar-control-height);
+    padding: 0 14px;
   }
 }
 
@@ -300,7 +388,38 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
 @media (max-width: 640px) {
   .node-toolbar {
-    align-items: stretch;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .node-toolbar__actions {
+    gap: 8px;
+  }
+
+  .node-toolbar__search {
+    min-width: 180px;
+    max-width: 220px;
+    height: var(--node-toolbar-control-height);
+    padding-left: 14px;
+  }
+
+  .node-toolbar__search input {
+    font-size: 13px;
+  }
+
+  .node-toolbar__search-clear {
+    width: 30px;
+    height: 30px;
+  }
+
+  .node-toolbar__groups {
+    flex: 0 0 auto;
+    max-width: none;
   }
 }
 </style>

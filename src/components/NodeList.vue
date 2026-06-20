@@ -176,14 +176,14 @@ function getExpireBadgeColor(status: string): string {
   switch (status) {
     case 'expired':
     case 'critical':
-      return '#E54D2E'
+      return 'var(--md-sys-color-error)'
     case 'warning':
-      return '#F97316'
+      return 'var(--md-chart-warning)'
     case 'long_term':
-      return '#8D8D8D'
+      return 'var(--md-sys-color-outline)'
     case 'normal':
     default:
-      return '#30A46C'
+      return 'var(--md-chart-success)'
   }
 }
 
@@ -219,8 +219,8 @@ function getNodeTags(node: NodeData): Array<{ text: string, color: string }> {
 function tagStyle(color: string) {
   return {
     color,
-    backgroundColor: `${color}20`,
-    borderColor: `${color}44`,
+    backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
+    borderColor: `color-mix(in srgb, ${color} 32%, var(--md-sys-color-outline-variant))`,
   }
 }
 
@@ -400,7 +400,7 @@ function diskPercent(node: NodeData) {
   gap: 4px;
   color: var(--md-sys-color-on-surface-variant);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
   user-select: none;
 }
@@ -451,7 +451,7 @@ function diskPercent(node: NodeData) {
 .node-list__name {
   color: var(--md-sys-color-on-surface);
   font-size: 14px;
-  font-weight: 680;
+  font-weight: 500;
 }
 
 .node-list__flag {
@@ -515,12 +515,12 @@ function diskPercent(node: NodeData) {
   color: var(--md-sys-color-on-error-container);
   background: var(--md-sys-color-error-container);
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .node-list__status-badge--online {
-  color: #063a20;
-  background: color-mix(in srgb, #8dd7a5 35%, transparent);
+  color: var(--md-chart-success);
+  background: color-mix(in srgb, var(--md-chart-success) 18%, transparent);
 }
 
 .node-list__offline-overlay {
@@ -533,10 +533,9 @@ function diskPercent(node: NodeData) {
   gap: 10px;
   padding: 0 18px;
   color: var(--md-sys-color-on-surface-variant);
-  background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 84%, transparent);
-  backdrop-filter: blur(16px);
+  background: var(--md-sys-color-surface-container-high);
   pointer-events: none;
-  transition: opacity 160ms ease;
+  transition: opacity var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 
   strong {
     min-width: 0;

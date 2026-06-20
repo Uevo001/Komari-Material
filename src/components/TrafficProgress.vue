@@ -86,7 +86,7 @@ const progressHeight = computed(() => {
 })
 
 // 颜色计算：优先使用传入的颜色，否则使用主题变量
-const resolvedUploadColor = computed(() => props.uploadColor || 'var(--md-chart-success, #006D3B)')
+const resolvedUploadColor = computed(() => props.uploadColor || 'var(--md-chart-success)')
 const resolvedDownloadColor = computed(() => props.downloadColor || 'var(--md-sys-color-primary)')
 
 // 单色模式下的颜色：根据流量类型自动选择
@@ -117,7 +117,7 @@ const resolvedSingleColor = computed(() => {
 })
 
 // Rail 背景颜色
-const railColor = computed(() => 'color-mix(in srgb, var(--md-sys-color-secondary-container) 72%, transparent)')
+const railColor = computed(() => 'var(--md-sys-color-surface-container-highest)')
 </script>
 
 <template>
@@ -175,22 +175,22 @@ const railColor = computed(() => 'color-mix(in srgb, var(--md-sys-color-secondar
     display: flex;
     overflow: hidden;
     height: 8px;
-    border-radius: 5px;
-    transition: background-color 0.3s;
+    border-radius: 999px;
+    transition: background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
   }
 
   &__fill {
     position: relative;
     height: 100%;
     transition:
-      max-width 0.2s,
-      width 0.2s,
-      background-color 0.3s;
+      max-width var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+      width var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+      background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 
     // 末端圆角
     &--last {
-      border-top-right-radius: 5px;
-      border-bottom-right-radius: 5px;
+      border-top-right-radius: 999px;
+      border-bottom-right-radius: 999px;
     }
   }
 

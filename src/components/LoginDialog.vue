@@ -234,7 +234,7 @@ function handleOAuth2Login() {
   h3 {
     margin: 0 0 6px;
     font-size: 18px;
-    font-weight: 650;
+    font-weight: 500;
   }
 
   p {
@@ -255,12 +255,12 @@ function handleOAuth2Login() {
   width: 100%;
   height: 48px;
   border: 1px solid var(--md-sys-color-outline);
-  border-radius: 14px;
+  border-radius: 4px;
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface);
   font-family: var(--md-app-number-font-family);
   font-size: 20px;
-  font-weight: 650;
+  font-weight: 500;
   text-align: center;
 
   &:focus {

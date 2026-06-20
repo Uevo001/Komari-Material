@@ -215,7 +215,7 @@ const storageInfo = computed<InfoItem[]>(() => [
     margin: 0;
     color: var(--md-sys-color-on-surface);
     font-size: 22px;
-    font-weight: 760;
+    font-weight: 500;
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -275,7 +275,7 @@ const storageInfo = computed<InfoItem[]>(() => [
     overflow-wrap: anywhere;
     color: var(--md-sys-color-on-surface);
     font-size: 13px;
-    font-weight: 650;
+    font-weight: 500;
   }
 }
 
@@ -311,6 +311,6 @@ const storageInfo = computed<InfoItem[]>(() => [
   width: auto;
   min-width: 86px;
   padding: 0 20px;
-  font-weight: 650;
+  font-weight: 500;
 }
 </style>

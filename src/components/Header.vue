@@ -2,6 +2,7 @@
 import { computed, h, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import AppearancePanel from './AppearancePanel.vue'
 import LoginDialog from './LoginDialog.vue'
 
 const router = useRouter()
@@ -24,6 +25,12 @@ const containerStyle = computed(() => {
 
 const actionButtons = computed(() => {
   const buttons = [
+    {
+      title: '外观设置',
+      icon: 'palette',
+      action: 'openAppearancePanel',
+      disabled: false,
+    },
     {
       title: appStore.themeMode === 'auto' ? '自动主题' : appStore.themeMode === 'light' ? '浅色主题' : '深色主题',
       icon: appStore.themeMode === 'auto' ? 'contrast' : appStore.themeMode === 'light' ? 'light_mode' : 'dark_mode',
@@ -56,6 +63,12 @@ function handleButtonClick(action: string) {
   switch (action) {
     case 'toggleTheme':
       appStore.updateThemeMode()
+      break
+    case 'openAppearancePanel':
+      window.$modal.create({
+        title: '外观设置',
+        content: () => h(AppearancePanel),
+      })
       break
     case 'jumpToSetting':
       location.href = '/admin'
@@ -105,15 +118,13 @@ function handleButtonClick(action: string) {
   top: 0;
   z-index: 20;
   transition:
-    background-color 180ms ease,
-    box-shadow 180ms ease,
-    backdrop-filter 180ms ease;
+    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    box-shadow var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 }
 
 .material-top-app-bar--scrolled {
-  background: color-mix(in srgb, var(--md-sys-color-surface) 82%, transparent);
+  background: var(--md-sys-color-surface-container);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
-  backdrop-filter: blur(18px);
 }
 
 .material-top-app-bar__inner {
