@@ -193,9 +193,9 @@ export function getExpireStatus(expiredAt: string | number | undefined): ExpireS
 }
 
 /**
- * 获取过期状态的显示颜色（Naive UI 颜色类型）
+ * 获取过期状态的显示颜色（兼容旧配置的语义颜色）
  * @param status 过期状态
- * @returns Naive UI 颜色类型
+ * @returns 语义颜色类型
  */
 export function getExpireStatusColor(status: ExpireStatus): 'error' | 'warning' | 'success' | 'default' {
   switch (status) {

@@ -1,17 +1,14 @@
-import type { Plugin } from 'vite'
+import type { Plugin, ProxyOptions } from 'vite'
 import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
+import process from 'node:process'
 import { fileURLToPath, URL } from 'node:url'
 import vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
 
-import AutoImport from 'unplugin-auto-import/vite'
-import { NaiveUiResolver } from 'unplugin-vue-components/resolvers'
-
-import Components from 'unplugin-vue-components/vite'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -32,6 +29,31 @@ function getCommitHash(): string {
   }
 }
 
+function createKomariProxy(proxyTarget: string): Record<string, ProxyOptions> {
+  const targetOrigin = new URL(proxyTarget).origin
+  const rewriteOrigin = (proxyReq: { setHeader: (name: string, value: string) => void }) => {
+    proxyReq.setHeader('origin', targetOrigin)
+    proxyReq.setHeader('referer', `${targetOrigin}/`)
+  }
+
+  const proxyOptions: ProxyOptions = {
+    target: proxyTarget,
+    changeOrigin: true,
+    secure: false,
+    ws: true,
+    cookieDomainRewrite: '',
+    configure: (proxy) => {
+      proxy.on('proxyReq', rewriteOrigin)
+      proxy.on('proxyReqWs', rewriteOrigin)
+    },
+  }
+
+  return {
+    '/api': proxyOptions,
+    '/rpc2': proxyOptions,
+  }
+}
+
 /**
  * Vite 插件：构建后打包 Komari 主题 Zip
  *
@@ -49,7 +71,7 @@ function komariThemeZip(): Plugin {
     apply: 'build',
     closeBundle: async () => {
       const commitHash = getCommitHash()
-      const zipFileName = `komari-theme-naive-build-${commitHash}.zip`
+      const zipFileName = `komari-theme-material-build-${commitHash}.zip`
       const distDir = resolve(__dirname, 'dist')
       const themeJsonPath = resolve(__dirname, 'komari-theme.json')
       const previewPath = resolve(__dirname, 'docs/preview.png')
@@ -60,10 +82,19 @@ function komariThemeZip(): Plugin {
         return
       }
 
+      if (existsSync(outputPath)) {
+        fs.rmSync(outputPath, { force: true })
+      }
+
       const output = fs.createWriteStream(outputPath)
       const archive = archiver('zip', { zlib: { level: 9 } })
 
       return new Promise((resolve, reject) => {
+        output.on('error', (err: Error) => {
+          console.error('[komari-theme-zip] Output error:', err)
+          reject(err)
+        })
+
         output.on('close', () => {
           const sizeMB = (archive.pointer() / 1024 / 1024).toFixed(2)
           console.log(`[komari-theme-zip] Created ${zipFileName} (${sizeMB} MB)`)
@@ -97,54 +128,50 @@ function komariThemeZip(): Plugin {
 const packageJson = require('./package.json')
 
 // https://vite.dev/config/
-export default defineConfig({
-  // 定义全局常量，在构建时注入
-  define: {
-    __BUILD_VERSION__: JSON.stringify(packageJson.version),
-    __BUILD_GIT_HASH__: JSON.stringify(getCommitHash()),
-  },
-  plugins: [
-    vue(),
-    vueDevTools(),
-    UnoCSS(),
-    AutoImport({
-      imports: [
-        'vue',
-        {
-          'naive-ui': [
-            'useDialog',
-            'useMessage',
-            'useNotification',
-            'useLoadingBar',
-          ],
-        },
-      ],
-    }),
-    Components({
-      resolvers: [NaiveUiResolver()],
-    }),
-    komariThemeZip(),
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const komariProxyTarget = env.KOMARI_PROXY_TARGET
+
+  return {
+    // 定义全局常量，在构建时注入
+    define: {
+      __BUILD_VERSION__: JSON.stringify(packageJson.version),
+      __BUILD_GIT_HASH__: JSON.stringify(getCommitHash()),
     },
-  },
-  server: {
-    host: '0.0.0.0',
-  },
-  build: {
-    // 调整 chunk 大小警告阈值
-    chunkSizeWarningLimit: 600,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          'echarts': ['echarts', 'vue-echarts'],
-          'naive-ui': ['naive-ui'],
-          'vueuse': ['@vueuse/core'],
+    plugins: [
+      vue({
+        template: {
+          compilerOptions: {
+            isCustomElement: tag => tag.startsWith('md-'),
+          },
+        },
+      }),
+      vueDevTools(),
+      UnoCSS(),
+      komariThemeZip(),
+    ],
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    },
+    server: {
+      host: '0.0.0.0',
+      proxy: komariProxyTarget ? createKomariProxy(komariProxyTarget) : undefined,
+    },
+    build: {
+      // 调整 chunk 大小警告阈值
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vue-vendor': ['vue', 'vue-router', 'pinia'],
+            'echarts': ['echarts', 'vue-echarts'],
+            'material-web': ['@material/web/all.js'],
+            'vueuse': ['@vueuse/core'],
+          },
         },
       },
     },
-  },
+  }
 })

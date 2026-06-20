@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { NAlert, NDivider, NEmpty, NInput, NRadioButton, NRadioGroup, NTabPane, NTabs } from 'naive-ui'
 import { computed, defineAsyncComponent, nextTick, onActivated, onDeactivated, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
@@ -8,46 +7,36 @@ import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { isRegionMatch } from '@/utils/regionHelper'
 
-// 定义组件名称，用于 KeepAlive 匹配
 defineOptions({
   name: 'HomeView',
 })
 
-// 异步组件：按需加载，减少首屏体积
 const NodeCard = defineAsyncComponent(() => import('@/components/NodeCard.vue'))
 const NodeGeneralCards = defineAsyncComponent(() => import('@/components/NodeGeneralCards.vue'))
 const NodeList = defineAsyncComponent(() => import('@/components/NodeList.vue'))
 
 const appStore = useAppStore()
 const nodesStore = useNodesStore()
-
 const router = useRouter()
 
-// 组件激活时恢复滚动位置
 onActivated(() => {
   if (appStore.homeScrollPosition > 0) {
-    // 使用 nextTick 确保 DOM 已渲染完成后再恢复滚动
     nextTick(() => {
       window.scrollTo({ top: appStore.homeScrollPosition, behavior: 'instant' })
     })
   }
 })
 
-// 组件失活时保存滚动位置
 onDeactivated(() => {
   appStore.homeScrollPosition = window.scrollY
 })
 
 const searchText = ref('')
-// 防抖后的搜索文本
 const debouncedSearchText = ref('')
-
-// 使用 VueUse 的 useDebounceFn 进行防抖，300ms 延迟
 const updateDebouncedSearch = useDebounceFn((value: string) => {
   debouncedSearchText.value = value
 }, 300)
 
-// 监听原始搜索文本变化
 watch(searchText, (value) => {
   updateDebouncedSearch(value)
 })
@@ -65,16 +54,13 @@ const groups = computed(() => {
   ]
 })
 
-// 计算是否应该显示分组 Tab
 const showGroupTabs = computed(() => {
-  // 如果配置为单分组时隐藏，且只有一个分组（不含"全部节点"），则隐藏
   if (appStore.hideSingleGroupTab && nodesStore.groups.length <= 1) {
     return false
   }
   return true
 })
 
-// 验证当前选中的分组是否有效，无效则重置为 'all'
 watch(
   () => nodesStore.groups,
   (groups) => {
@@ -86,36 +72,21 @@ watch(
   { immediate: true },
 )
 
-/**
- * 检查节点是否匹配搜索词
- */
 function isNodeMatchSearch(node: typeof nodesStore.nodes[number], search: string): boolean {
   if (!search.trim())
     return true
 
   const lowerSearch = search.toLowerCase().trim()
-
-  // 搜索节点名称
   if (node.name.toLowerCase().includes(lowerSearch))
     return true
-
-  // 搜索地区（使用 regionHelper 支持国家名称搜索）
   if (node.region && isRegionMatch(node.region, search))
     return true
-
-  // 搜索操作系统
   if (node.os && node.os.toLowerCase().includes(lowerSearch))
     return true
-
-  // 搜索分组
   if (node.group && node.group.toLowerCase().includes(lowerSearch))
     return true
-
-  // 搜索标签
   if (node.tags && node.tags.toLowerCase().includes(lowerSearch))
     return true
-
-  // 搜索备注
   if (node.remark && node.remark.toLowerCase().includes(lowerSearch))
     return true
 
@@ -123,12 +94,10 @@ function isNodeMatchSearch(node: typeof nodesStore.nodes[number], search: string
 }
 
 const nodeList = computed(() => {
-  // 先按分组筛选
   let filteredNodes = appStore.nodeSelectedGroup === 'all'
     ? nodesStore.nodes
     : nodesStore.nodes.filter(node => node.group === appStore.nodeSelectedGroup)
 
-  // 再按防抖后的搜索词筛选
   if (debouncedSearchText.value.trim()) {
     filteredNodes = filteredNodes.filter(node => isNodeMatchSearch(node, debouncedSearchText.value))
   }
@@ -136,117 +105,202 @@ const nodeList = computed(() => {
   return filteredNodes
 })
 
+const alertClass = computed(() => {
+  const type = appStore.alertType
+  if (type === 'error')
+    return 'md-alert--error'
+  if (type === 'success')
+    return 'md-alert--success'
+  if (type === 'warning')
+    return 'md-alert--warning'
+  return ''
+})
+
+function updateSearch(event: Event) {
+  searchText.value = (event.target as HTMLInputElement).value
+}
+
 function handleNodeClick(node: typeof nodesStore.nodes[number]) {
   router.push({ name: 'instance-detail', params: { id: node.uuid } })
 }
-
-// 是否启用背景模糊
-const hasBackgroundBlur = computed(() => {
-  return appStore.backgroundEnabled && appStore.cardBlurRadius > 0
-})
-
-// 计算模糊半径类
-const blurClass = computed(() => {
-  if (!hasBackgroundBlur.value)
-    return ''
-  const radius = appStore.cardBlurRadius
-  if (radius <= 8)
-    return 'glass-8'
-  if (radius <= 12)
-    return 'glass-12'
-  if (radius <= 16)
-    return 'glass-16'
-  if (radius <= 20)
-    return 'glass-20'
-  return `glass-${radius}`
-})
 </script>
 
 <template>
   <div class="home-view">
-    <div v-if="appStore.connectionError" class="alert px-4">
-      <NAlert type="error" title="RPC 服务错误" show-icon>
-        连接服务器失败，请检查网络设置或刷新页面后再试。
-      </NAlert>
+    <div v-if="appStore.connectionError" class="home-view__alert-wrap">
+      <div class="md-alert md-alert--error">
+        <span class="material-symbols-rounded">error</span>
+        <div>
+          <strong>RPC 服务错误</strong>
+          <div>连接服务器失败，请检查网络设置或刷新页面后再试。</div>
+        </div>
+      </div>
     </div>
-    <!-- 自定义公告 -->
-    <div v-if="appStore.alertEnabled && appStore.alertContent" class="alert px-4">
-      <NAlert :type="appStore.alertType" :title="appStore.alertTitle || undefined" show-icon>
-        <MarkdownRenderer :content="appStore.alertContent" />
-      </NAlert>
+
+    <div v-if="appStore.alertEnabled && appStore.alertContent" class="home-view__alert-wrap">
+      <div class="md-alert" :class="alertClass">
+        <span class="material-symbols-rounded">campaign</span>
+        <div>
+          <strong v-if="appStore.alertTitle">{{ appStore.alertTitle }}</strong>
+          <MarkdownRenderer :content="appStore.alertContent" />
+        </div>
+      </div>
     </div>
+
     <NodeGeneralCards />
-    <NDivider class="my-0! px-4!" dashed />
-    <div class="node-info p-4 flex flex-col gap-4">
-      <div class="search flex gap-2 items-center">
-        <NInput
-          v-model:value="searchText"
-          placeholder="搜索节点名称、地区、系统"
-          :class="[{ 'glass-input-enabled': hasBackgroundBlur }, blurClass]"
+
+    <div class="home-view__divider" />
+
+    <section class="node-info">
+      <div class="node-toolbar">
+        <label class="node-toolbar__search" aria-label="搜索节点">
+          <span class="material-symbols-rounded" aria-hidden="true">search</span>
+          <input
+            type="search"
+            placeholder="搜索节点名称、地区、系统"
+            :value="searchText"
+            @input="updateSearch"
+          >
+        </label>
+
+        <div class="md-segmented-control" role="group" aria-label="节点视图">
+          <button
+            class="md-segmented-control__button"
+            :class="{ 'is-active': appStore.nodeViewMode === 'card' }"
+            type="button"
+            title="卡片视图"
+            @click="appStore.nodeViewMode = 'card'"
+          >
+            <span class="material-symbols-rounded">grid_view</span>
+          </button>
+          <button
+            class="md-segmented-control__button"
+            :class="{ 'is-active': appStore.nodeViewMode === 'list' }"
+            type="button"
+            title="列表视图"
+            @click="appStore.nodeViewMode = 'list'"
+          >
+            <span class="material-symbols-rounded">view_list</span>
+          </button>
+        </div>
+      </div>
+
+      <div v-if="showGroupTabs" class="md-tab-row" aria-label="节点分组">
+        <button
+          v-for="group in groups"
+          :key="group.name"
+          class="md-tab-button"
+          :class="{ 'is-active': appStore.nodeSelectedGroup === group.name }"
+          type="button"
+          @click="appStore.nodeSelectedGroup = group.name"
         >
-          <template #prefix>
-            <div class="i-icon-park-outline-search" />
-          </template>
-        </NInput>
-        <NRadioGroup v-model:value="appStore.nodeViewMode" class="view-selector">
-          <NRadioButton value="card" class="view-selector-item">
-            <div class="i-icon-park-outline-view-grid-card" />
-          </NRadioButton>
-          <NRadioButton value="list" class="view-selector-item">
-            <div class="i-icon-park-outline-view-list" />
-          </NRadioButton>
-        </NRadioGroup>
+          {{ group.tab }}
+        </button>
       </div>
+
       <div class="nodes">
-        <NTabs v-if="showGroupTabs" v-model:value="appStore.nodeSelectedGroup" animated>
-          <NTabPane v-for="group in groups" :key="group.name" :tab="group.tab" :name="group.name">
-            <!-- Card 视图 -->
-            <div v-if="nodeList.length !== 0 && appStore.nodeViewMode === 'card'" class="gap-4 grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(340px,1fr))]">
-              <NodeCard v-for="node in nodeList" :key="node.uuid" :node="node" @click="handleNodeClick(node)" />
-            </div>
-            <!-- List 视图 -->
-            <NodeList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'list'" :nodes="nodeList" @click="handleNodeClick" />
-            <!-- 空状态 -->
-            <div v-else class="text-gray-500 text-center">
-              <NEmpty description="暂无节点" />
-            </div>
-          </NTabPane>
-        </NTabs>
-        <!-- 无分组时直接显示节点列表 -->
-        <template v-else>
-          <!-- Card 视图 -->
-          <div v-if="nodeList.length !== 0 && appStore.nodeViewMode === 'card'" class="gap-4 grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(340px,1fr))]">
-            <NodeCard v-for="node in nodeList" :key="node.uuid" :node="node" @click="handleNodeClick(node)" />
-          </div>
-          <!-- List 视图 -->
-          <NodeList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'list'" :nodes="nodeList" @click="handleNodeClick" />
-          <!-- 空状态 -->
-          <div v-else class="text-gray-500 text-center">
-            <NEmpty description="暂无节点" />
-          </div>
-        </template>
+        <div v-if="nodeList.length !== 0 && appStore.nodeViewMode === 'card'" class="node-card-grid">
+          <NodeCard v-for="node in nodeList" :key="node.uuid" :node="node" @click="handleNodeClick(node)" />
+        </div>
+
+        <NodeList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'list'" :nodes="nodeList" @click="handleNodeClick" />
+
+        <div v-else class="md-empty">
+          <span class="material-symbols-rounded">inbox</span>
+          <span>暂无节点</span>
+        </div>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped lang="scss">
-.view-selector :deep(.n-radio__label) {
-  width: 100%;
-  height: 100%;
+.home-view__alert-wrap {
+  padding: 8px 16px;
+}
 
+.home-view__divider {
+  height: 1px;
+  margin: 0 16px;
+  background: repeating-linear-gradient(
+    to right,
+    color-mix(in srgb, var(--md-sys-color-outline-variant) 82%, transparent) 0 8px,
+    transparent 8px 14px
+  );
+}
+
+.node-info {
   display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.node-toolbar {
+  display: flex;
+  gap: 10px;
   align-items: center;
-  justify-content: center;
 }
 
-/* 毛玻璃搜索框样式 */
-.glass-input-enabled {
-  background-color: rgba(255, 255, 255, 0.7) !important;
-  border-radius: var(--n-border-radius);
+.node-toolbar__search {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  height: var(--md-app-control-height);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: 0 14px;
+  color: var(--md-sys-color-on-surface-variant);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-low) 86%, transparent);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+
+  &:focus-within {
+    border-color: var(--md-sys-color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--md-sys-color-primary) 18%, transparent);
+    color: var(--md-sys-color-primary);
+    background: var(--md-sys-color-surface-container-low);
+  }
+
+  .material-symbols-rounded {
+    flex: 0 0 auto;
+    font-size: 22px;
+  }
+
+  input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    color: var(--md-sys-color-on-surface);
+    background: transparent;
+    font: inherit;
+
+    &::placeholder {
+      color: var(--md-sys-color-on-surface-variant);
+      opacity: 0.78;
+    }
+  }
 }
 
-html.dark .glass-input-enabled {
-  background-color: rgba(24, 24, 28, 0.85) !important;
+.node-card-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: var(--md-app-grid-gap);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .node-toolbar {
+    align-items: stretch;
+  }
 }
 </style>

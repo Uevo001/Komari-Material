@@ -1,28 +1,37 @@
-<script setup lang="ts">
-import { NSpin, useOsTheme } from 'naive-ui'
-import { computed } from 'vue'
-import { useAppStore } from '@/stores/app'
-
-const appStore = useAppStore()
-const osTheme = useOsTheme()
-
-const isDark = computed(() => {
-  if (appStore.themeMode === 'auto') {
-    return osTheme.value === 'dark'
-  }
-  return appStore.themeMode === 'dark'
-})
-</script>
-
 <template>
-  <div
-    class="loading-cover flex h-screen w-screen items-center left-0 top-0 justify-center absolute z-20 backdrop-blur-sm"
-    :class="isDark ? 'bg-black/50' : 'bg-white/80'"
-  >
-    <NSpin>
-      <template #description>
-        Loading...
-      </template>
-    </NSpin>
+  <div class="loading-cover" role="status" aria-live="polite">
+    <div class="loading-cover__surface">
+      <div class="md-spinner" />
+      <span>Loading...</span>
+    </div>
   </div>
 </template>
+
+<style scoped lang="scss">
+.loading-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--md-sys-color-background) 82%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.loading-cover__surface {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 24px;
+  padding: 18px 22px;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-app-elevation-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+</style>

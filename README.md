@@ -1,15 +1,15 @@
-<h3 align="center"> Komari Naive </h3>
-<p align="center">基于 Vue 3 + Vite + Naive UI 构建的 Komari Monitor 主题
+<h3 align="center"> Komari Material </h3>
+<p align="center">基于 Vue 3 + Vite + Material Design 3 构建的 Komari Monitor 主题
 </p>
-<a href="https://github.com/lyimoexiao/komari-theme-naive">
-<img src="docs/preview.png" alt="Komari Theme Naive" />
+<a href="https://github.com/lyimoexiao/komari-theme-material">
+<img src="docs/preview.png" alt="Komari Theme Material" />
 </a>
 
 ## 使用
 
-1. 从 [Release 页面](https://github.com/lyimoexiao/komari-theme-naive/releases) 下载最新的 `komari-theme-naive-build-*.zip` 文件
+1. 从 [Release 页面](https://github.com/lyimoexiao/komari-theme-material/releases) 下载最新的 `komari-theme-material-build-*.zip` 文件
 2. 登录 Komari Monitor 后，点击 `设置`，选择 `主题管理` 选项卡
-3. 点击 `上传主题` 按钮，选择下载的 `komari-theme-naive-build-*.zip` 文件
+3. 点击 `上传主题` 按钮，选择下载的 `komari-theme-material-build-*.zip` 文件
 4. 刷新页面，即可看到新的主题
 
 ## 环境要求
@@ -46,7 +46,7 @@ pnpm preview
 | --------- | ------------------------------------------ |
 | 框架      | Vue 3 (Composition API + `<script setup>`) |
 | 构建工具  | Vite 7                                     |
-| UI 组件库 | Naive UI                                   |
+| UI 组件库 | Material Web (`@material/web`)             |
 | 状态管理  | Pinia 3                                    |
 | 路由      | Vue Router 5                               |
 | CSS 方案  | UnoCSS (Wind4 preset) + SCSS               |
@@ -59,7 +59,7 @@ pnpm preview
 - [Komari Next](https://github.com/tonyliuzj/komari-next)
 - [Vue 3](https://vuejs.org/)
 - [Vite](https://vitejs.dev/)
-- [Naive UI](https://www.naiveui.com/)
+- [Material Web](https://material-web.dev/)
 - [UnoCSS](https://unocss.dev/)
 
 ## License

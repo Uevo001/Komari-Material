@@ -201,30 +201,39 @@ onUnmounted(() => {
   height: 100%;
 }
 
-// 默认背景：亮色模式 - 温暖的渐变色
+// 默认背景：使用 Material 动态色的柔和 surface 层
 .background-default {
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 25%, #d4e5f7 50%, #e8e0f0 75%, #f5f0e8 100%);
+  background: linear-gradient(
+    135deg,
+    var(--md-sys-color-surface) 0%,
+    var(--md-sys-color-surface-container-low) 28%,
+    color-mix(in srgb, var(--md-sys-color-primary-container) 62%, var(--md-sys-color-surface)) 64%,
+    var(--md-sys-color-surface-container-high) 100%
+  );
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
 }
 
-// 暗色模式 - 深邃的渐变色
 html.dark .background-default {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #1f3a5f 50%, #2d2d44 75%, #1a1a2e 100%);
+  background: linear-gradient(
+    135deg,
+    var(--md-sys-color-surface-dim) 0%,
+    var(--md-sys-color-surface-container-low) 30%,
+    color-mix(in srgb, var(--md-sys-color-primary-container) 44%, var(--md-sys-color-surface)) 68%,
+    var(--md-sys-color-surface-container-high) 100%
+  );
   background-size: 400% 400%;
   animation: gradientShift 20s ease infinite;
 }
 
-// 加载中背景：亮色模式
 .background-loading {
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 25%, #d4e5f7 50%, #e8e0f0 75%, #f5f0e8 100%);
+  background: linear-gradient(135deg, var(--md-sys-color-surface) 0%, var(--md-sys-color-primary-container) 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
 }
 
-// 加载中背景：暗色模式
 html.dark .background-loading {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #1f3a5f 50%, #2d2d44 75%, #1a1a2e 100%);
+  background: linear-gradient(135deg, var(--md-sys-color-surface-dim) 0%, var(--md-sys-color-primary-container) 100%);
   background-size: 400% 400%;
   animation: gradientShift 20s ease infinite;
 }

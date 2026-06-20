@@ -1,179 +1,408 @@
 <script setup lang="ts">
-import type { GlobalTheme, GlobalThemeOverrides } from 'naive-ui'
-import {
-  darkTheme,
-  dateEnUS,
-  dateZhCN,
-  enUS,
-  lightTheme,
-  NBackTop,
-  NConfigProvider,
-  NDialogProvider,
-  NGlobalStyle,
-  NLoadingBarProvider,
-  NMessageProvider,
-  NModalProvider,
-  NNotificationProvider,
-  useDialog,
-  useLoadingBar,
-  useMessage,
-  useModal,
-  useNotification,
-  zhCN,
-} from 'naive-ui'
-
-import { computed, defineComponent, h, provide, ref, watch } from 'vue'
+import type { PropType, Ref, VNodeChild } from 'vue'
+import { computed, defineComponent, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { applyMaterialThemeTokens } from '@/utils/materialTheme'
+import '@material/web/all.js'
+import 'material-symbols/rounded.css'
 
-const appStore = useAppStore()
+type ToastType = 'success' | 'error' | 'warning' | 'info'
 
-// 滚动状态：是否显示返回顶部按钮（即页面已滚动）
-const isScrolled = ref(false)
-
-// 提供给子组件使用
-provide('isScrolled', isScrolled)
-
-// 直接使用 store 中的 isDark computed
-const isDark = computed(() => appStore.isDark)
-
-const theme = computed<GlobalTheme | null>(() => {
-  return isDark.value ? darkTheme : lightTheme
-})
-
-const locale = computed(() => {
-  const langMap = {
-    'zh-CN': zhCN,
-    'en-US': enUS,
-  }
-  return langMap[appStore.lang] || zhCN
-})
-
-const dateLocale = computed(() => {
-  const langMap = {
-    'zh-CN': dateZhCN,
-    'en-US': dateEnUS,
-  }
-  return langMap[appStore.lang] || dateZhCN
-})
-
-function setupNaiveTools() {
-  window.$loadingBar = useLoadingBar()
-  window.$notification = useNotification()
-  window.$message = useMessage()
-  window.$dialog = useDialog()
-  window.$modal = useModal()
+interface ToastItem {
+  id: number
+  type: ToastType
+  content: string
 }
 
-const NaiveProviderContent = defineComponent({
-  setup() {
-    setupNaiveTools()
+interface ModalState {
+  id: number
+  title?: string
+  content?: () => VNodeChild
+  closable: boolean
+  closeOnEsc: boolean
+  maskClosable: boolean
+}
+
+const appStore = useAppStore()
+const isDark = computed(() => appStore.isDark)
+const isScrolled = ref(false)
+const toasts = ref<ToastItem[]>([])
+const activeModal = ref<ModalState | null>(null)
+const loadingBarVisible = ref(false)
+let toastId = 0
+let modalId = 0
+
+provide<Ref<boolean>>('isScrolled', isScrolled)
+
+const ModalContentRenderer = defineComponent({
+  props: {
+    renderContent: {
+      type: Function as PropType<() => VNodeChild>,
+      required: false,
+    },
   },
-  render() {
-    return h('div', { className: 'naive-tools' })
+  setup(props) {
+    return () => props.renderContent?.() ?? null
   },
 })
 
-// 从主题配置读取设置，支持亮色/暗色模式分别配置
-const themeOverride = computed<GlobalThemeOverrides>(() => {
-  const settings = appStore.publicSettings?.theme_settings as Record<string, unknown> | undefined
+const toastIcons: Record<ToastType, string> = {
+  success: 'check_circle',
+  error: 'error',
+  warning: 'warning',
+  info: 'info',
+}
 
-  // 通用默认值
-  const borderRadius = (settings?.borderRadius as string) || '3px'
-  const fontFamily = (settings?.fontFamily as string) || '"MiSans VF", sans-serif'
+function pushToast(type: ToastType, content: string) {
+  const id = ++toastId
+  toasts.value.push({ id, type, content })
+  window.setTimeout(() => {
+    toasts.value = toasts.value.filter(item => item.id !== id)
+  }, 3600)
+}
 
-  // 根据当前主题模式选择颜色配置
-  const primaryColor = isDark.value
-    ? (settings?.darkPrimaryColor as string) || '#63e2b6'
-    : (settings?.lightPrimaryColor as string) || '#18a058'
+function notificationText(options: { title?: string, content?: string }) {
+  return [options.title, options.content].filter(Boolean).join('：')
+}
 
-  const primaryColorHover = isDark.value
-    ? (settings?.darkPrimaryColorHover as string) || '#7fe7c4'
-    : (settings?.lightPrimaryColorHover as string) || '#36ad6a'
+function closeModal() {
+  activeModal.value = null
+}
 
-  const primaryColorPressed = isDark.value
-    ? (settings?.darkPrimaryColorPressed as string) || '#5acea7'
-    : (settings?.lightPrimaryColorPressed as string) || '#0c7a43'
+function handleScrimClick() {
+  if (activeModal.value?.maskClosable) {
+    closeModal()
+  }
+}
 
-  return {
-    common: {
-      primaryColor,
-      primaryColorHover,
-      primaryColorPressed,
-      primaryColorSuppl: primaryColorHover,
-      borderRadius,
-      fontFamily,
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && activeModal.value?.closeOnEsc) {
+    closeModal()
+  }
+}
+
+function handleScroll() {
+  isScrolled.value = window.scrollY > 0
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function setupMaterialTools() {
+  window.$message = {
+    success: content => pushToast('success', content),
+    error: content => pushToast('error', content),
+    warning: content => pushToast('warning', content),
+    info: content => pushToast('info', content),
+  }
+
+  window.$modal = {
+    create: (options) => {
+      activeModal.value = {
+        id: ++modalId,
+        title: options.title,
+        content: options.content as (() => VNodeChild) | undefined,
+        closable: options.closable ?? true,
+        closeOnEsc: options.closeOnEsc ?? true,
+        maskClosable: options.maskClosable ?? true,
+      }
+    },
+    destroyAll: closeModal,
+  }
+
+  window.$loadingBar = {
+    start: () => {
+      loadingBarVisible.value = true
+    },
+    finish: () => {
+      loadingBarVisible.value = false
+    },
+    error: () => {
+      loadingBarVisible.value = false
+      pushToast('error', '加载失败')
     },
   }
-})
 
-// 将主题颜色同步到 CSS 变量，供 UnoCSS 和自定义样式使用
+  const notificationApi = {
+    create: (options: { title?: string, content?: string, type?: ToastType }) => {
+      pushToast(options.type ?? 'info', notificationText(options))
+    },
+    success: (options: { title?: string, content?: string }) => pushToast('success', notificationText(options)),
+    error: (options: { title?: string, content?: string }) => pushToast('error', notificationText(options)),
+    warning: (options: { title?: string, content?: string }) => pushToast('warning', notificationText(options)),
+    info: (options: { title?: string, content?: string }) => pushToast('info', notificationText(options)),
+  }
+
+  window.$notification = notificationApi
+  window.$dialog = notificationApi
+}
+
+setupMaterialTools()
+
 watch(
-  themeOverride,
-  (overrides) => {
-    const root = document.documentElement
-    if (overrides.common?.primaryColor) {
-      root.style.setProperty('--primary-color', overrides.common.primaryColor)
-    }
-    if (overrides.common?.primaryColorHover) {
-      root.style.setProperty('--primary-color-hover', overrides.common.primaryColorHover)
-    }
-    if (overrides.common?.primaryColorPressed) {
-      root.style.setProperty('--primary-color-pressed', overrides.common.primaryColorPressed)
-    }
+  () => appStore.materialThemeTokens,
+  (tokens) => {
+    applyMaterialThemeTokens(tokens)
   },
   { immediate: true },
 )
 
-// 同步暗色模式到 html.dark 类，供 CSS 选择器使用
 watch(
   isDark,
   (dark) => {
     const root = document.documentElement
-    if (dark) {
-      root.classList.add('dark')
-    }
-    else {
-      root.classList.remove('dark')
-    }
+    root.classList.toggle('dark', dark)
   },
   { immediate: true },
 )
 
-// 当启用自定义背景时，设置 body 背景透明
 watch(
   [() => appStore.backgroundEnabled, isDark],
   ([enabled, dark]) => {
     const body = document.body
     if (enabled) {
-      // 使用 cssText 覆盖所有背景样式
       body.style.setProperty('background-color', 'transparent', 'important')
     }
     else {
-      // 恢复默认背景
       body.style.removeProperty('background-color')
-      // 设置正确的背景色
-      body.style.backgroundColor = dark ? 'rgb(16, 16, 20)' : '#fff'
+      body.style.backgroundColor = dark ? 'var(--md-sys-color-background)' : 'var(--md-sys-color-background)'
     }
   },
   { immediate: true },
 )
+
+onMounted(() => {
+  handleScroll()
+  window.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('keydown', handleKeydown)
+})
 </script>
 
 <template>
-  <NConfigProvider :theme="theme" :theme-overrides="themeOverride" :locale="locale" :date-locale="dateLocale">
-    <NBackTop :visibility-height="1" class="z-9999" @update:show="isScrolled = $event" />
-    <NGlobalStyle />
-    <NLoadingBarProvider>
-      <NDialogProvider>
-        <NNotificationProvider>
-          <NMessageProvider>
-            <NModalProvider>
-              <slot />
-              <NaiveProviderContent />
-            </NModalProvider>
-          </NMessageProvider>
-        </NNotificationProvider>
-      </NDialogProvider>
-    </NLoadingBarProvider>
-  </NConfigProvider>
+  <slot />
+
+  <Transition name="loading-bar">
+    <div v-if="loadingBarVisible" class="material-loading-bar">
+      <md-linear-progress indeterminate />
+    </div>
+  </Transition>
+
+  <Transition name="fab">
+    <button v-if="isScrolled" class="material-back-top" type="button" aria-label="返回顶部" @click="scrollToTop">
+      <span class="material-symbols-rounded">keyboard_arrow_up</span>
+    </button>
+  </Transition>
+
+  <Teleport to="body">
+    <div class="material-snackbar-host" aria-live="polite" aria-atomic="true">
+      <TransitionGroup name="snackbar">
+        <div v-for="toast in toasts" :key="toast.id" class="material-snackbar" :class="`material-snackbar--${toast.type}`">
+          <span class="material-symbols-rounded material-snackbar__icon">{{ toastIcons[toast.type] }}</span>
+          <span>{{ toast.content }}</span>
+        </div>
+      </TransitionGroup>
+    </div>
+
+    <Transition name="modal">
+      <div v-if="activeModal" class="material-modal-scrim" @click.self="handleScrimClick">
+        <section class="material-modal-card" role="dialog" aria-modal="true">
+          <header v-if="activeModal.title || activeModal.closable" class="material-modal-card__header">
+            <h2 v-if="activeModal.title" class="material-modal-card__title">
+              {{ activeModal.title }}
+            </h2>
+            <button v-if="activeModal.closable" class="material-icon-button material-modal-card__close" type="button" aria-label="关闭" @click="closeModal">
+              <span class="material-symbols-rounded">close</span>
+            </button>
+          </header>
+          <div class="material-modal-card__content">
+            <ModalContentRenderer v-if="activeModal.content" :render-content="activeModal.content" />
+          </div>
+        </section>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
+
+<style scoped lang="scss">
+.material-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+}
+
+.material-back-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9999;
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 16px;
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+  box-shadow: var(--md-app-elevation-2);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--md-sys-color-shadow) 22%, transparent);
+  }
+}
+
+.material-snackbar-host {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 11000;
+  display: flex;
+  max-width: min(420px, calc(100vw - 32px));
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.material-snackbar {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: var(--md-sys-color-inverse-on-surface);
+  background: var(--md-sys-color-inverse-surface);
+  box-shadow: var(--md-app-elevation-2);
+  font-size: 14px;
+  line-height: 1.45;
+  pointer-events: auto;
+}
+
+.material-snackbar--success .material-snackbar__icon {
+  color: #8dd7a5;
+}
+
+.material-snackbar--error .material-snackbar__icon {
+  color: #ffb4ab;
+}
+
+.material-snackbar--warning .material-snackbar__icon {
+  color: #ffb95c;
+}
+
+.material-snackbar--info .material-snackbar__icon {
+  color: var(--md-sys-color-inverse-primary);
+}
+
+.material-modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 10500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 42%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.material-modal-card {
+  width: min(720px, 100%);
+  max-height: min(80vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 28px;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--md-sys-color-shadow) 28%, transparent);
+}
+
+.material-modal-card__header {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 8px 24px;
+}
+
+.material-modal-card__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.material-modal-card__close {
+  flex-shrink: 0;
+}
+
+.material-modal-card__content {
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 24px 24px;
+}
+
+.loading-bar-enter-active,
+.loading-bar-leave-active,
+.fab-enter-active,
+.fab-leave-active,
+.modal-enter-active,
+.modal-leave-active,
+.snackbar-enter-active,
+.snackbar-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.loading-bar-enter-from,
+.loading-bar-leave-to,
+.fab-enter-from,
+.fab-leave-to,
+.modal-enter-from,
+.modal-leave-to,
+.snackbar-enter-from,
+.snackbar-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+@media (max-width: 640px) {
+  .material-back-top {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .material-snackbar-host {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .material-modal-scrim {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .material-modal-card {
+    max-height: 88vh;
+    border-radius: 28px 28px 16px 16px;
+  }
+}
+</style>

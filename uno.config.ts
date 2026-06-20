@@ -1,12 +1,9 @@
 import presetWind4 from '@unocss/preset-wind4'
-import { defineConfig, presetIcons, transformerDirectives, transformerVariantGroup } from 'unocss'
+import { defineConfig, transformerDirectives, transformerVariantGroup } from 'unocss'
 
 export default defineConfig({
   presets: [
     presetWind4(),
-    presetIcons({
-      scale: 1.2,
-    }),
   ],
   transformers: [
     transformerDirectives(),
@@ -37,14 +34,14 @@ export default defineConfig({
     [
       /^glass-bg$/,
       () => ({
-        'background-color': 'color-mix(in srgb, var(--n-color) 75%, transparent)',
+        'background-color': 'color-mix(in srgb, var(--md-sys-color-surface-container-high) 75%, transparent)',
       }),
     ],
     // 毛玻璃效果 - 暗色模式卡片背景
     [
       /^glass-bg-dark$/,
       () => ({
-        'background-color': 'color-mix(in srgb, var(--n-color) 80%, transparent)',
+        'background-color': 'color-mix(in srgb, var(--md-sys-color-surface-container-high) 80%, transparent)',
       }),
     ],
   ],

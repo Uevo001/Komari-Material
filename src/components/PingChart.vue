@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
-import { NButton, NEmpty, NSpin, NSwitch, NTooltip } from 'naive-ui'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import VChart from 'vue-echarts'
 import { useAppStore } from '@/stores/app'
@@ -18,28 +17,28 @@ const isDark = computed(() => appStore.isDark)
 const rpc = getSharedRpc()
 
 // 图表主题相关颜色
-const chartThemeColors = computed(() => ({
-  text: isDark.value ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)',
-  textSecondary: isDark.value ? 'rgba(255, 255, 255, 0.55)' : 'rgba(0, 0, 0, 0.55)',
-  textTertiary: isDark.value ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)',
-  borderColor: isDark.value ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-  splitLineColor: isDark.value ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
-  tooltipBg: isDark.value ? 'rgba(40, 40, 40, 0.95)' : 'rgba(255, 255, 255, 0.98)',
-  tooltipShadow: isDark.value ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.12)',
-  crosshairColor: isDark.value ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
-}))
+const chartThemeColors = computed(() => {
+  const colors = appStore.materialThemeTokens.colors
+  return {
+    text: colors['on-surface']!,
+    textSecondary: colors['on-surface-variant']!,
+    textTertiary: colors.outline!,
+    borderColor: colors['outline-variant']!,
+    splitLineColor: isDark.value ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+    tooltipBg: colors['surface-container-high']!,
+    tooltipShadow: isDark.value ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.16)',
+    crosshairColor: isDark.value ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.16)',
+  }
+})
 
 // 优化后的图表配色方案（多任务时使用）
-const chartColors = [
-  '#FF6B6B', // 珊瑚红
-  '#4ECDC4', // 青绿色
-  '#A78BFA', // 紫罗兰
-  '#60A5FA', // 天蓝色
-  '#FFB347', // 琥珀黄
-  '#F472B6', // 粉红色
-  '#34D399', // 翠绿色
-  '#FB923C', // 橙色
-]
+const chartColors = new Proxy([] as string[], {
+  get(_, prop) {
+    const colors = appStore.materialThemeTokens.chartPalette
+    const value = colors[prop as keyof string[]]
+    return typeof value === 'function' ? value.bind(colors) : value
+  },
+})
 
 // 从 publicSettings 获取记录保留时间
 const maxPingRecordPreserveTime = computed(() => appStore.publicSettings?.ping_record_preserve_time || 168)
@@ -344,6 +343,31 @@ function hideAllTasks() {
   selectedTaskIds.value = []
 }
 
+function formatTaskDetail(task: TaskInfo): string {
+  const lines: string[] = []
+  if (task.min !== undefined)
+    lines.push(`最小：${Math.round(task.min)} ms`)
+  if (task.max !== undefined)
+    lines.push(`最大：${Math.round(task.max)} ms`)
+  if (task.avg !== undefined)
+    lines.push(`平均：${Math.round(task.avg)} ms`)
+  if (task.latest !== undefined)
+    lines.push(`最新：${Math.round(task.latest)} ms`)
+  if (task.p50 !== undefined)
+    lines.push(`P50：${Math.round(task.p50)} ms`)
+  if (task.p99 !== undefined)
+    lines.push(`P99：${Math.round(task.p99)} ms`)
+  if (task.p99_p50_ratio !== undefined)
+    lines.push(`波动率：${task.p99_p50_ratio.toFixed(2)}`)
+  if (task.interval !== undefined)
+    lines.push(`间隔：${task.interval}s`)
+  if (task.type)
+    lines.push(`类型：${task.type.toUpperCase()}`)
+  if (task.total !== undefined)
+    lines.push(`总数：${task.total}`)
+  return lines.join('\n')
+}
+
 // ==================== 图表配置 ====================
 
 // 通用 Tooltip 配置
@@ -533,166 +557,237 @@ const blurClass = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
-    <!-- 时间选择器 -->
-    <div class="flex flex-wrap gap-2 justify-center">
-      <NButton
+  <div class="ping-chart">
+    <div class="md-control-row">
+      <button
         v-for="view in availableViews"
         :key="view.label"
-        :type="selectedView === view.label ? 'primary' : 'default'"
-        size="small"
+        class="md-control-button"
+        :class="{ 'is-active': selectedView === view.label }"
+        type="button"
         @click="selectedView = view.label"
       >
         {{ view.label }}
-      </NButton>
+      </button>
     </div>
 
-    <!-- 内容区域 -->
-    <NSpin :show="loading" content-class="flex flex-col gap-4">
-      <div v-if="error" class="text-red-500 py-8 text-center">
-        {{ error }}
+    <div class="md-loading-box ping-chart__content" :class="{ 'is-loading': loading }">
+      <div v-if="loading" class="ping-chart__loading">
+        <div class="md-spinner" />
       </div>
-      <div v-else-if="tasks.length === 0 && !loading" class="py-8">
-        <NEmpty description="暂无延迟数据" />
+
+      <div v-if="error" class="md-alert md-alert--error">
+        <span class="material-symbols-rounded">error</span>
+        <span>{{ error }}</span>
+      </div>
+
+      <div v-else-if="tasks.length === 0 && !loading" class="md-empty">
+        <span class="material-symbols-rounded">timeline</span>
+        <span>暂无延迟数据</span>
       </div>
 
       <template v-else>
-        <!-- 最新值统计卡片（可点击切换选中状态） -->
-        <div v-if="latestValues.length > 0" class="gap-3 grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))">
-          <div
+        <div v-if="latestValues.length > 0" class="ping-task-grid">
+          <article
             v-for="task in latestValues"
             :key="task.id"
-            class="p-3 border border-transparent flex gap-3 cursor-pointer select-none transition-colors items-center hover:border-solid"
+            class="md-card ping-task-card"
             :class="[
-              selectedTaskIds.includes(task.id)
-                ? ''
-                : 'opacity-50',
-              hasBackgroundBlur ? 'glass-task-enabled' : 'task-card-default',
+              selectedTaskIds.includes(task.id) ? '' : 'ping-task-card--muted',
+              { 'md-surface-glass': hasBackgroundBlur },
               blurClass,
             ]"
-            :onmouseover="(e: MouseEvent) => ((e.currentTarget as HTMLElement).style.borderColor = task.color)"
-            :onmouseout="(e: MouseEvent) => ((e.currentTarget as HTMLElement).style.borderColor = 'transparent')"
+            :style="{ borderColor: selectedTaskIds.includes(task.id) ? task.color : undefined }"
+            :title="formatTaskDetail(task)"
             @click="toggleTask(task.id)"
           >
-            <div
-              class="rounded-md flex-shrink-0 h-10 w-1.5"
-              :style="{ backgroundColor: task.color }"
-            />
-            <div class="flex-1 min-w-0">
-              <div class="flex gap-2 items-center">
-                <span class="text-base font-semibold truncate">{{ task.name }}</span>
-                <NTooltip placement="top">
-                  <template #trigger>
-                    <span class="i-carbon-information text-sm opacity-50 cursor-help transition-opacity hover:opacity-100" style="color: var(--n-text-color-2)" @click.stop />
-                  </template>
-                  <div class="text-sm gap-x-4 gap-y-1.5 grid grid-cols-2">
-                    <template v-if="task.min !== undefined">
-                      <span style="color: var(--n-text-color-3)">最小</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.min) }} ms</span>
-                    </template>
-                    <template v-if="task.max !== undefined">
-                      <span style="color: var(--n-text-color-3)">最大</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.max) }} ms</span>
-                    </template>
-                    <template v-if="task.avg !== undefined">
-                      <span style="color: var(--n-text-color-3)">平均</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.avg) }} ms</span>
-                    </template>
-                    <template v-if="task.latest !== undefined">
-                      <span style="color: var(--n-text-color-3)">最新</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.latest) }} ms</span>
-                    </template>
-                    <template v-if="task.p50 !== undefined">
-                      <span style="color: var(--n-text-color-3)">P50</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.p50) }} ms</span>
-                    </template>
-                    <template v-if="task.p99 !== undefined">
-                      <span style="color: var(--n-text-color-3)">P99</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ Math.round(task.p99) }} ms</span>
-                    </template>
-                    <template v-if="task.p99_p50_ratio !== undefined">
-                      <span style="color: var(--n-text-color-3)">波动率</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.p99_p50_ratio.toFixed(2) }}</span>
-                    </template>
-                    <template v-if="task.interval !== undefined">
-                      <span style="color: var(--n-text-color-3)">间隔</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.interval }}s</span>
-                    </template>
-                    <template v-if="task.type">
-                      <span style="color: var(--n-text-color-3)">类型</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.type.toUpperCase() }}</span>
-                    </template>
-                    <template v-if="task.total !== undefined">
-                      <span style="color: var(--n-text-color-3)">总数</span>
-                      <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily }">{{ task.total }}</span>
-                    </template>
-                  </div>
-                </NTooltip>
+            <span class="ping-task-card__stripe" :style="{ backgroundColor: task.color }" />
+            <div class="ping-task-card__body">
+              <div class="ping-task-card__title-row">
+                <strong>{{ task.name }}</strong>
+                <span class="material-symbols-rounded">info</span>
               </div>
-              <div class="text-sm mt-1 flex gap-3 items-center" style="color: var(--n-text-color-3)">
-                <span class="font-medium" :style="{ fontFamily: appStore.numberFontFamily, color: 'var(--n-text-color-1)' }">{{ task.latestValue !== null ? `${Math.round(task.latestValue)} ms` : '-' }}</span>
-                <span class="opacity-60">•</span>
-                <span :style="{ fontFamily: appStore.numberFontFamily }">{{ task.loss.toFixed(1) }}% 丢包</span>
-                <template v-if="task.p99_p50_ratio !== undefined">
-                  <span class="opacity-60">•</span>
-                  <span :style="{ fontFamily: appStore.numberFontFamily }" title="波动率 p99/p50">{{ task.p99_p50_ratio.toFixed(1) }} 波动</span>
-                </template>
+              <div class="ping-task-card__meta md-number">
+                <span>{{ task.latestValue !== null ? `${Math.round(task.latestValue)} ms` : '-' }}</span>
+                <span>{{ task.loss.toFixed(1) }}% 丢包</span>
+                <span v-if="task.p99_p50_ratio !== undefined">{{ task.p99_p50_ratio.toFixed(1) }} 波动</span>
               </div>
             </div>
-          </div>
+          </article>
         </div>
 
-        <!-- 峰值裁剪开关 + 全选/全不选 -->
-        <div class="flex flex-wrap gap-4 items-center">
-          <div class="flex gap-2 items-center">
-            <NSwitch v-model:value="cutPeak" size="small" />
-            <span class="text-sm">裁剪峰值</span>
-            <NTooltip>
-              <template #trigger>
-                <span class="i-carbon-information text-sm opacity-50 cursor-help transition-opacity hover:opacity-100" style="color: var(--n-text-color-3)" />
-              </template>
-              <span>使用 EWMA 算法平滑数据并过滤突变值</span>
-            </NTooltip>
-          </div>
-          <div class="flex gap-2 items-center">
-            <NButton size="small" tertiary @click="showAllTasks">
+        <div class="ping-chart__toolbar">
+          <label class="ping-switch" title="使用 EWMA 算法平滑数据并过滤突变值">
+            <input v-model="cutPeak" type="checkbox">
+            <span class="ping-switch__track"><span class="ping-switch__thumb" /></span>
+            <span>裁剪峰值</span>
+          </label>
+
+          <div class="ping-chart__actions">
+            <button class="md-control-button" type="button" @click="showAllTasks">
               全选
-            </NButton>
-            <NButton size="small" tertiary @click="hideAllTasks">
+            </button>
+            <button class="md-control-button" type="button" @click="hideAllTasks">
               全不选
-            </NButton>
+            </button>
           </div>
         </div>
 
-        <!-- 图表 -->
-        <div class="h-80">
+        <div class="ping-chart__canvas">
           <VChart :option="pingChartOption" autoresize />
         </div>
       </template>
-    </NSpin>
+    </div>
   </div>
 </template>
 
-<style scoped>
-/* 默认任务卡片样式 */
-.task-card-default {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: var(--n-border-radius);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+<style scoped lang="scss">
+.ping-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-html.dark .task-card-default {
-  background-color: rgba(30, 30, 35, 0.95);
-  border-color: rgba(255, 255, 255, 0.08);
+.ping-chart__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-/* 毛玻璃任务卡片样式 */
-.glass-task-enabled {
-  background-color: rgba(255, 255, 255, 0.7);
-  border-radius: var(--n-border-radius);
+.ping-chart__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-html.dark .glass-task-enabled {
-  background-color: rgba(24, 24, 28, 0.85);
+.ping-task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.ping-task-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ping-task-card--muted {
+  opacity: 0.52;
+}
+
+.ping-task-card__stripe {
+  width: 6px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.ping-task-card__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.ping-task-card__title-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+
+  strong {
+    overflow: hidden;
+    color: var(--md-sys-color-on-surface);
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .material-symbols-rounded {
+    margin-left: auto;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 17px;
+  }
+}
+
+.ping-task-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 12px;
+}
+
+.ping-chart__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ping-chart__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ping-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--md-sys-color-on-surface);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.ping-switch__track {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--md-sys-color-surface-variant);
+  box-shadow: inset 0 0 0 1px var(--md-sys-color-outline);
+  transition: background-color 160ms ease;
+}
+
+.ping-switch__thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--md-sys-color-outline);
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+
+.ping-switch input:checked + .ping-switch__track {
+  background: var(--md-sys-color-primary);
+  box-shadow: none;
+}
+
+.ping-switch input:checked + .ping-switch__track .ping-switch__thumb {
+  background: var(--md-sys-color-on-primary);
+  transform: translateX(20px);
+}
+
+.ping-chart__canvas {
+  height: 320px;
 }
 </style>

@@ -1,8 +1,10 @@
 import type { MeInfo, PublicSettings } from '@/utils/api'
 import type { ByteDecimalsConfig, UptimeFormat } from '@/utils/helper'
+import type { MaterialDensity } from '@/utils/materialTheme'
 import { usePreferredDark, useStorageAsync } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { buildMaterialThemeTokens, DEFAULT_MATERIAL_SEED_COLOR, normalizeHexColor } from '@/utils/materialTheme'
 
 type ThemeMode = 'auto' | 'light' | 'dark'
 type Lang = 'zh-CN' | 'en-US'
@@ -124,6 +126,31 @@ const useAppStore = defineStore('app', () => {
       return settings.maxPageWidth.trim()
     }
     return '1800px'
+  })
+
+  const materialSeedColor = computed<string>(() => {
+    const settings = publicSettings.value?.theme_settings
+    if (!settings)
+      return DEFAULT_MATERIAL_SEED_COLOR
+
+    const explicitSeed = settings.materialSeedColor
+    if (typeof explicitSeed === 'string' && explicitSeed.trim()) {
+      return normalizeHexColor(explicitSeed)
+    }
+
+    const legacyPrimary = settings.lightPrimaryColor || settings.darkPrimaryColor
+    return normalizeHexColor(legacyPrimary, DEFAULT_MATERIAL_SEED_COLOR)
+  })
+
+  const materialDensity = computed<MaterialDensity>(() => {
+    const settings = publicSettings.value?.theme_settings
+    if (settings && typeof settings.materialDensity === 'string') {
+      const density = settings.materialDensity
+      if (density === 'compact' || density === 'comfortable') {
+        return density
+      }
+    }
+    return 'compact'
   })
 
   // 计算属性：卡片进度条布局配置
@@ -572,6 +599,10 @@ const useAppStore = defineStore('app', () => {
     return themeMode.value === 'dark'
   })
 
+  const materialThemeTokens = computed(() => {
+    return buildMaterialThemeTokens(materialSeedColor.value, isDark.value, materialDensity.value)
+  })
+
   // 计算属性：当前主题模式下的背景 URL
   const currentBackgroundUrl = computed<string>(() => {
     if (isDark.value) {
@@ -621,6 +652,9 @@ const useAppStore = defineStore('app', () => {
     showLoginButton,
     fullWidth,
     maxPageWidth,
+    materialSeedColor,
+    materialDensity,
+    materialThemeTokens,
     cardProgressLayout,
     numberFontFamily,
     listViewColumns,

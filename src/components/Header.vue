@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { NAvatar, NButton, NFlex, NH3, NPopover } from 'naive-ui'
 import { computed, h, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
@@ -7,13 +6,12 @@ import LoginDialog from './LoginDialog.vue'
 
 const router = useRouter()
 const appStore = useAppStore()
-
-// 从 Provider 注入滚动状态
 const isScrolled = inject<ReturnType<typeof ref<boolean>>>('isScrolled', ref(false))
-
 const siteFavicon = ref('/favicon.ico')
 
-// 计算页面容器的样式
+const brandTitle = computed(() => appStore.publicSettings?.sitename || 'Komari Material')
+const showThemeIdentity = computed(() => brandTitle.value !== 'Komari Material')
+
 const containerStyle = computed(() => {
   if (appStore.fullWidth) {
     return {}
@@ -28,17 +26,16 @@ const actionButtons = computed(() => {
   const buttons = [
     {
       title: appStore.themeMode === 'auto' ? '自动主题' : appStore.themeMode === 'light' ? '浅色主题' : '深色主题',
-      icon: appStore.themeMode === 'auto' ? 'i-icon-park-outline-dark-mode' : appStore.themeMode === 'light' ? 'i-icon-park-outline-sun-one' : 'i-icon-park-outline-moon',
+      icon: appStore.themeMode === 'auto' ? 'contrast' : appStore.themeMode === 'light' ? 'light_mode' : 'dark_mode',
       action: 'toggleTheme',
       disabled: false,
     },
   ]
 
-  // 已登录时显示设置按钮，未登录时根据配置决定是否显示登录按钮
   if (appStore.isLoggedIn) {
     buttons.push({
       title: '后台管理',
-      icon: 'i-icon-park-outline-setting',
+      icon: 'settings',
       action: 'jumpToSetting',
       disabled: false,
     })
@@ -46,7 +43,7 @@ const actionButtons = computed(() => {
   else if (appStore.showLoginButton) {
     buttons.push({
       title: '登录',
-      icon: 'i-icon-park-outline-login',
+      icon: 'login',
       action: 'openLoginDialog',
       disabled: false,
     })
@@ -61,14 +58,11 @@ function handleButtonClick(action: string) {
       appStore.updateThemeMode()
       break
     case 'jumpToSetting':
-      // 设置页由 Server 提供，不能使用无极路由
       location.href = '/admin'
       break
     case 'openLoginDialog':
       window.$modal.create({
         title: '登录',
-        preset: 'dialog',
-        showIcon: false,
         content: () => h(LoginDialog),
       })
       break
@@ -77,26 +71,109 @@ function handleButtonClick(action: string) {
 </script>
 
 <template>
-  <div class="transition-all duration-200 top-0 position-sticky z-10" :class="isScrolled ? 'bg-$n-color shadow-sm backdrop-blur-md' : 'bg-transparent'">
-    <div class="px-4 flex-between h-16" :style="containerStyle">
-      <NFlex class="flex-center cursor-pointer" @click="router.push('/')">
-        <NAvatar :src="siteFavicon" round />
-        <NH3 class="m-0">
-          {{ appStore.publicSettings?.sitename || 'Komari Monitor' }}
-        </NH3>
-      </NFlex>
-      <NFlex class="flex gap-4">
-        <NPopover v-for="button in actionButtons" :key="button.action" :disabled="button.disabled">
-          <template #trigger>
-            <NButton :disabled="button.disabled" class="p-2 h-8 w-8" text @click="handleButtonClick(button.action)">
-              <div :class="button.icon" />
-            </NButton>
-          </template>
-          <template #default>
-            {{ button.title }}
-          </template>
-        </NPopover>
-      </NFlex>
+  <header class="material-top-app-bar" :class="{ 'material-top-app-bar--scrolled': isScrolled }">
+    <div class="material-top-app-bar__inner" :style="containerStyle">
+      <button class="material-brand" type="button" aria-label="返回首页" @click="router.push('/')">
+        <img class="material-brand__avatar" :src="siteFavicon" alt="">
+        <span class="material-brand__copy">
+          <span class="material-brand__text">{{ brandTitle }}</span>
+          <span v-if="showThemeIdentity" class="material-brand__subtitle">Komari Material</span>
+        </span>
+      </button>
+
+      <nav class="material-top-app-bar__actions" aria-label="全局操作">
+        <button
+          v-for="button in actionButtons"
+          :key="button.action"
+          class="material-icon-button"
+          type="button"
+          :disabled="button.disabled"
+          :title="button.title"
+          :aria-label="button.title"
+          @click="handleButtonClick(button.action)"
+        >
+          <span class="material-symbols-rounded">{{ button.icon }}</span>
+        </button>
+      </nav>
     </div>
-  </div>
+  </header>
 </template>
+
+<style scoped lang="scss">
+.material-top-app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    backdrop-filter 180ms ease;
+}
+
+.material-top-app-bar--scrolled {
+  background: color-mix(in srgb, var(--md-sys-color-surface) 82%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.material-top-app-bar__inner {
+  display: flex;
+  height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 16px;
+}
+
+.material-brand {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  color: var(--md-sys-color-on-surface);
+  background: transparent;
+  cursor: pointer;
+}
+
+.material-brand__avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--md-sys-color-outline-variant);
+}
+
+.material-brand__copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+  text-align: left;
+}
+
+.material-brand__text {
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.material-brand__subtitle {
+  overflow: hidden;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.material-top-app-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+</style>

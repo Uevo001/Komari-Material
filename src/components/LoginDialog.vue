@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { FormInst } from 'naive-ui'
-import { NButton, NDivider, NForm, NFormItem, NInput, NInputOtp } from 'naive-ui'
-
 import { ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { ApiError, getSharedApi } from '@/utils/api'
@@ -18,8 +15,6 @@ const emit = defineEmits<{
 const appStore = useAppStore()
 const api = getSharedApi()
 
-const formRef = ref<FormInst | undefined>()
-
 const form = ref({
   username: '',
   password: '',
@@ -30,41 +25,54 @@ const showOtpDialog = ref(false)
 const otpCode = ref<string[]>(['', '', '', '', '', ''])
 const otpLoading = ref(false)
 
-const onlyAllowNumber = (value: string) => !value || /^\d+$/.test(value)
+function updateUsername(event: Event) {
+  form.value.username = (event.target as HTMLInputElement).value
+}
 
-const rules = ref({
-  username: [{ required: true, message: '请输入用户名', trigger: ['blur'] }],
-  password: [{ required: true, message: '请输入密码', trigger: ['blur'] }],
-})
+function updatePassword(event: Event) {
+  form.value.password = (event.target as HTMLInputElement).value
+}
+
+function updateOtp(index: number, event: Event) {
+  const value = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(-1)
+  otpCode.value[index] = value
+}
+
+function validateForm(): boolean {
+  if (!form.value.username.trim()) {
+    window.$message?.warning('请输入用户名')
+    return false
+  }
+  if (!form.value.password) {
+    window.$message?.warning('请输入密码')
+    return false
+  }
+  return true
+}
+
+async function finishLogin() {
+  window.$message?.success('登录成功')
+
+  if (props.forceLogin) {
+    emit('loginSuccess')
+  }
+  else {
+    await reconnectAfterLogin()
+    window.$modal?.destroyAll()
+  }
+}
 
 async function handleLogin() {
-  try {
-    await formRef.value?.validate()
-  }
-  catch {
+  if (!validateForm())
     return
-  }
 
   loading.value = true
 
   try {
     await api.login(form.value.username, form.value.password)
-
-    // 登录成功
-    window.$message?.success('登录成功')
-
-    if (props.forceLogin) {
-      // 强制登录模式：触发事件让父组件处理后续流程
-      emit('loginSuccess')
-    }
-    else {
-      // 普通登录：重新连接 WebSocket
-      await reconnectAfterLogin()
-      window.$modal?.destroyAll()
-    }
+    await finishLogin()
   }
   catch (error) {
-    // 检查是否需要 2FA 验证
     if (error instanceof ApiError) {
       const msg = error.message.toLowerCase()
       if (msg.includes('2fa') || msg.includes('2fa code') || msg.includes('two factor')) {
@@ -91,19 +99,7 @@ async function handleOtpSubmit() {
 
   try {
     await api.login(form.value.username, form.value.password, code)
-
-    // 登录成功
-    window.$message?.success('登录成功')
-
-    if (props.forceLogin) {
-      // 强制登录模式：触发事件让父组件处理后续流程
-      emit('loginSuccess')
-    }
-    else {
-      // 普通登录：重新连接 WebSocket
-      await reconnectAfterLogin()
-      window.$modal?.destroyAll()
-    }
+    await finishLogin()
   }
   catch (error) {
     console.error('[LoginDialog] OTP error:', error)
@@ -121,68 +117,163 @@ function handleOAuth2Login() {
 </script>
 
 <template>
-  <div class="w-full">
-    <!-- 登录表单 -->
-    <div v-if="!showOtpDialog" class="flex flex-col">
-      <NForm ref="formRef" :model="form" :rules="rules" class="w-full">
-        <NFormItem label="用户名" path="username">
-          <NInput v-model:value="form.username" placeholder="请输入用户名" :disabled="loading" />
-        </NFormItem>
-        <NFormItem label="密码" path="password">
-          <NInput
-            v-model:value="form.password"
-            type="password"
-            placeholder="请输入密码"
-            :disabled="loading"
-            @keydown.enter="handleLogin"
-          />
-        </NFormItem>
-      </NForm>
-      <NButton type="primary" :loading="loading" block @click="handleLogin">
-        <template #icon>
-          <div class="i-icon-park-outline-login" />
-        </template>
-        登录
-      </NButton>
+  <div class="login-dialog">
+    <div v-if="!showOtpDialog" class="login-dialog__form">
+      <label class="md-form-field">
+        <span class="md-form-label">用户名</span>
+        <md-outlined-text-field
+          class="md-text-field"
+          type="text"
+          autocomplete="username"
+          placeholder="请输入用户名"
+          :value="form.username"
+          :disabled="loading"
+          @input="updateUsername"
+          @keydown.enter="handleLogin"
+        />
+      </label>
+
+      <label class="md-form-field">
+        <span class="md-form-label">密码</span>
+        <md-outlined-text-field
+          class="md-text-field"
+          type="password"
+          autocomplete="current-password"
+          placeholder="请输入密码"
+          :value="form.password"
+          :disabled="loading"
+          @input="updatePassword"
+          @keydown.enter="handleLogin"
+        />
+      </label>
+
+      <md-filled-button class="login-dialog__primary" :disabled="loading" @click="handleLogin">
+        <span class="material-symbols-rounded login-dialog__button-icon" aria-hidden="true">login</span>
+        <span>{{ loading ? '登录中...' : '登录' }}</span>
+      </md-filled-button>
+
+      <template v-if="appStore.publicSettings?.oauth_enable">
+        <div class="login-dialog__divider" />
+        <md-outlined-button class="login-dialog__primary" @click="handleOAuth2Login">
+          <span class="material-symbols-rounded login-dialog__button-icon" aria-hidden="true">open_in_new</span>
+          <span>使用 OAuth2 登录</span>
+        </md-outlined-button>
+      </template>
     </div>
 
-    <!-- OTP 验证表单 -->
-    <div v-else class="flex flex-col gap-4 w-full items-center overflow-x-auto">
-      <div class="text-center">
-        <div class="text-lg font-medium mb-2">
-          两步验证
-        </div>
-        <div class="text-sm text-gray-500">
-          请输入验证器中的 6 位数字验证码
-        </div>
+    <div v-else class="login-dialog__otp">
+      <div class="login-dialog__otp-copy">
+        <h3>两步验证</h3>
+        <p>请输入验证器中的 6 位数字验证码</p>
       </div>
-      <NInputOtp
-        v-model:value="otpCode"
-        :length="6"
-        :disabled="otpLoading"
-        :allow-input="onlyAllowNumber"
-        @keydown.enter="handleOtpSubmit"
-      />
-      <div class="flex gap-2 w-full">
-        <NButton quaternary :disabled="otpLoading" @click="showOtpDialog = false">
+
+      <div class="login-dialog__otp-inputs" aria-label="两步验证码">
+        <input
+          v-for="(_, index) in otpCode"
+          :key="index"
+          class="login-dialog__otp-input"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          maxlength="1"
+          :value="otpCode[index]"
+          :disabled="otpLoading"
+          @input="updateOtp(index, $event)"
+          @keydown.enter="handleOtpSubmit"
+        >
+      </div>
+
+      <div class="login-dialog__otp-actions">
+        <md-text-button :disabled="otpLoading" @click="showOtpDialog = false">
           返回
-        </NButton>
-        <NButton type="primary" class="flex-1" :loading="otpLoading" @click="handleOtpSubmit">
-          验证
-        </NButton>
+        </md-text-button>
+        <md-filled-button :disabled="otpLoading" @click="handleOtpSubmit">
+          {{ otpLoading ? '验证中...' : '验证' }}
+        </md-filled-button>
       </div>
     </div>
-
-    <template v-if="!showOtpDialog && appStore.publicSettings?.oauth_enable">
-      <NDivider />
-      <div class="flex flex-col">
-        <NButton block @click="handleOAuth2Login">
-          <template #icon>
-            <div class="i-icon-park-outline-outbound" />
-          </template>
-          使用 OAuth2 登录
-        </NButton>
-      </div>
-    </template>
   </div>
 </template>
+
+<style scoped lang="scss">
+.login-dialog {
+  width: 100%;
+}
+
+.login-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-dialog__primary {
+  width: 100%;
+}
+
+.login-dialog__button-icon {
+  margin-inline-end: 8px;
+  font-size: 18px;
+  vertical-align: -4px;
+}
+
+.login-dialog__divider {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--md-sys-color-outline-variant);
+}
+
+.login-dialog__otp {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+}
+
+.login-dialog__otp-copy {
+  text-align: center;
+
+  h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 650;
+  }
+
+  p {
+    margin: 0;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 13px;
+  }
+}
+
+.login-dialog__otp-inputs {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(6, minmax(34px, 1fr));
+  gap: 8px;
+}
+
+.login-dialog__otp-input {
+  width: 100%;
+  height: 48px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 14px;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface);
+  font-family: var(--md-app-number-font-family);
+  font-size: 20px;
+  font-weight: 650;
+  text-align: center;
+
+  &:focus {
+    border-color: var(--md-sys-color-primary);
+    outline: 2px solid color-mix(in srgb, var(--md-sys-color-primary) 24%, transparent);
+    outline-offset: 1px;
+  }
+}
+
+.login-dialog__otp-actions {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  gap: 8px;
+}
+</style>

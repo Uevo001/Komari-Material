@@ -1,6 +1,5 @@
 <script setup lang="ts">
-// 因为 NProgress 不支持双叠加，所以直接二开了一个组件（
-import { useThemeVars } from 'naive-ui'
+// 双颜色流量进度条，Material Web 的线性进度不支持这种叠加模式。
 import { computed } from 'vue'
 import { formatBytes } from '@/utils/helper'
 
@@ -32,9 +31,6 @@ const props = withDefaults(defineProps<TrafficProgressProps>(), {
   height: undefined,
   showIndicator: false,
 })
-
-// 获取 Naive UI 主题变量
-const themeVars = useThemeVars()
 
 // 是否显示流量进度条
 const showProgress = computed(() => props.trafficLimit > 0)
@@ -90,8 +86,8 @@ const progressHeight = computed(() => {
 })
 
 // 颜色计算：优先使用传入的颜色，否则使用主题变量
-const resolvedUploadColor = computed(() => props.uploadColor || themeVars.value.successColor)
-const resolvedDownloadColor = computed(() => props.downloadColor || themeVars.value.infoColor)
+const resolvedUploadColor = computed(() => props.uploadColor || 'var(--md-chart-success, #006D3B)')
+const resolvedDownloadColor = computed(() => props.downloadColor || 'var(--md-sys-color-primary)')
 
 // 单色模式下的颜色：根据流量类型自动选择
 const resolvedSingleColor = computed(() => {
@@ -121,7 +117,7 @@ const resolvedSingleColor = computed(() => {
 })
 
 // Rail 背景颜色
-const railColor = computed(() => themeVars.value.progressRailColor)
+const railColor = computed(() => 'color-mix(in srgb, var(--md-sys-color-secondary-container) 72%, transparent)')
 </script>
 
 <template>
@@ -203,10 +199,10 @@ const railColor = computed(() => themeVars.value.progressRailColor)
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
-    color: var(--n-text-color-2);
+    color: var(--md-sys-color-on-surface-variant);
 
     &-detail {
-      color: var(--n-text-color-3);
+      color: var(--md-sys-color-outline);
     }
   }
 }
