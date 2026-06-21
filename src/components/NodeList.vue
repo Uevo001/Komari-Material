@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
-import { computed, h, ref } from 'vue'
+import { computed, h } from 'vue'
 import PingChart from '@/components/PingChart.vue'
 import TrafficProgress from '@/components/TrafficProgress.vue'
 import { useAppStore } from '@/stores/app'
@@ -19,46 +19,10 @@ const emit = defineEmits<{
 
 const appStore = useAppStore()
 const themeColors = computed(() => appStore.materialThemeTokens.chartColors)
-const sortKey = ref<string>('')
-const sortDir = ref<1 | -1>(1)
-const columns = computed(() => appStore.listViewColumns)
 
 const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
 const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
 const formatUptime = (seconds: number) => formatUptimeWithFormat(seconds, appStore.uptimeFormat)
-
-const columnTitles: Record<string, string> = {
-  status: '状态',
-  region: '地区',
-  name: '节点',
-  tags: '标签',
-  uptime: '运行时间',
-  os: '系统',
-  cpu: 'CPU',
-  mem: '内存',
-  disk: '硬盘',
-  traffic: '流量',
-  rate: '速率',
-}
-
-const gridStyle = computed(() => {
-  const visibleColumns = columns.value
-  const columnWidths = appStore.listColumnWidths
-  const columnGap = appStore.listColumnGap
-  const templateColumns = visibleColumns.map(col => columnWidths[col] || 'auto')
-  return {
-    gridTemplateColumns: templateColumns.join(' '),
-    gap: columnGap,
-  }
-})
-
-const rowHeightStyle = computed(() => {
-  const height = appStore.listRowHeight
-  if (height) {
-    return { height, minHeight: height }
-  }
-  return {}
-})
 
 const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
 const listBlurClass = computed(() => {
@@ -75,59 +39,6 @@ const listBlurClass = computed(() => {
     return 'glass-20'
   return `glass-${radius}`
 })
-
-const sortedNodes = computed(() => {
-  const nodes = [...props.nodes]
-  const key = sortKey.value
-  const dir = sortDir.value
-  if (!key)
-    return nodes
-
-  return nodes.sort((a, b) => {
-    switch (key) {
-      case 'status':
-        return dir * ((a.online ? 1 : 0) - (b.online ? 1 : 0))
-      case 'region':
-      case 'name':
-      case 'os': {
-        const va = String(a[key] || '').toLowerCase()
-        const vb = String(b[key] || '').toLowerCase()
-        return dir * (va < vb ? -1 : va > vb ? 1 : 0)
-      }
-      case 'uptime':
-        return dir * ((a.uptime ?? 0) - (b.uptime ?? 0))
-      case 'cpu':
-        return dir * ((a.cpu ?? 0) - (b.cpu ?? 0))
-      case 'mem':
-        return dir * ((a.ram ?? 0) / (a.mem_total || 1) - (b.ram ?? 0) / (b.mem_total || 1))
-      case 'disk':
-        return dir * ((a.disk ?? 0) / (a.disk_total || 1) - (b.disk ?? 0) / (b.disk_total || 1))
-      case 'traffic':
-        return dir * (getTrafficUsed(a) - getTrafficUsed(b))
-      case 'rate':
-        return dir * (((a.net_out ?? 0) + (a.net_in ?? 0)) - ((b.net_out ?? 0) + (b.net_in ?? 0)))
-      default:
-        return 0
-    }
-  })
-})
-
-function handleSort(col: string) {
-  if (sortKey.value === col) {
-    sortDir.value = sortDir.value === 1 ? -1 : 1
-  }
-  else {
-    sortKey.value = col
-    sortDir.value = 1
-  }
-}
-
-function getColumnStyle(col: string): Record<string, string> {
-  return {
-    ...(appStore.listColumnPadding[col] ? { padding: appStore.listColumnPadding[col] } : {}),
-    ...(appStore.listColumnMargin[col] ? { margin: appStore.listColumnMargin[col] } : {}),
-  }
-}
 
 function getFlagSrc(region: string): string {
   return `/images/flags/${getRegionCode(region)}.svg`
@@ -232,6 +143,14 @@ function statusColor(status: 'success' | 'warning' | 'error') {
   return themeColors.value.error
 }
 
+function progressValue(percentage: number) {
+  return Math.min(Math.max(percentage, 0), 100) / 100
+}
+
+function formatLoad(node: NodeData) {
+  return `${(node.load ?? 0).toFixed(2)}, ${(node.load5 ?? 0).toFixed(2)}, ${(node.load15 ?? 0).toFixed(2)}`
+}
+
 function memPercent(node: NodeData) {
   return (node.ram ?? 0) / (node.mem_total || 1) * 100
 }
@@ -243,129 +162,146 @@ function diskPercent(node: NodeData) {
 
 <template>
   <div class="node-list-wrapper">
-    <div class="md-card node-list" :class="[{ 'md-surface-glass': hasBackgroundBlur }, listBlurClass]">
-      <div class="node-list__header" :style="gridStyle">
-        <div
-          v-for="col in columns"
-          :key="col"
-          class="node-list__header-cell"
-          :style="getColumnStyle(col)"
-          @click="handleSort(col)"
-        >
-          <span>{{ columnTitles[col] }}</span>
-          <span v-if="sortKey === col" class="material-symbols-rounded">{{ sortDir === 1 ? 'arrow_upward' : 'arrow_downward' }}</span>
-        </div>
-      </div>
-
-      <div
-        v-for="node in sortedNodes"
+    <div class="node-list">
+      <article
+        v-for="node in props.nodes"
         :key="node.uuid"
-        class="node-list__row"
-        :class="{ 'node-list__row--offline': !node.online }"
-        :style="rowHeightStyle"
+        class="md-card md-card--interactive node-list-card"
+        :class="[
+          node.online ? 'node-list-card--online' : 'node-list-card--offline',
+          { 'md-surface-glass': hasBackgroundBlur },
+          listBlurClass,
+        ]"
+        role="button"
+        tabindex="0"
         @click="handleClick(node)"
+        @keydown.enter.self="handleClick(node)"
+        @keydown.space.self.prevent="handleClick(node)"
       >
-        <div class="node-list__grid" :style="gridStyle">
-          <template v-for="col in columns" :key="col">
-            <div v-if="col === 'status'" class="node-list__cell node-list__cell--status" :style="getColumnStyle('status')">
-              <button
-                v-if="appStore.showPingChartButton"
-                class="material-icon-button node-list__chart-button"
-                type="button"
-                title="查看延迟图表"
-                @click.stop="openPingChart(node)"
-              >
-                <span class="material-symbols-rounded">show_chart</span>
-              </button>
-              <span v-if="appStore.listStatusStyle === 'tag'" class="md-chip" :class="node.online ? 'md-chip--success' : 'md-chip--error'">
-                {{ node.online ? '在线' : '离线' }}
-              </span>
-              <span v-else class="node-list__status-badge" :class="{ 'node-list__status-badge--online': node.online }">
-                {{ node.online ? '在线' : '离线' }}
-              </span>
-            </div>
+        <div class="node-list-card__identity">
+          <span v-if="appStore.listStatusStyle === 'tag'" class="md-chip node-list-card__status" :class="node.online ? 'md-chip--success' : 'md-chip--error'">
+            {{ node.online ? '在线' : '离线' }}
+          </span>
+          <span v-else class="node-list-card__status-badge" :class="{ 'node-list-card__status-badge--online': node.online }">
+            {{ node.online ? '在线' : '离线' }}
+          </span>
 
-            <div v-else-if="col === 'region'" class="node-list__cell node-list__cell--center" :style="getColumnStyle('region')">
-              <img class="node-list__flag" :src="getFlagSrc(node.region)" :alt="getRegionDisplayName(node.region)">
-            </div>
+          <img class="node-list-card__flag" :src="getFlagSrc(node.region)" :alt="getRegionDisplayName(node.region)">
 
-            <div v-else-if="col === 'name'" class="node-list__cell node-list__name" :style="getColumnStyle('name')">
+          <div class="node-list-card__name-stack">
+            <h3 class="node-list-card__name">
               {{ node.name }}
+            </h3>
+            <div class="node-list-card__meta">
+              <span>{{ getRegionDisplayName(node.region) }}</span>
+              <span>{{ formatUptime(node.uptime ?? 0) }}</span>
             </div>
+          </div>
 
-            <div v-else-if="col === 'tags'" class="node-list__cell node-list__tags" :style="getColumnStyle('tags')">
-              <span v-for="(tag, index) in getNodeTags(node)" :key="index" class="md-chip" :style="tagStyle(tag.color)">
-                {{ tag.text }}
-              </span>
-            </div>
-
-            <div v-else-if="col === 'uptime'" class="node-list__cell md-number" :style="getColumnStyle('uptime')">
-              {{ formatUptime(node.uptime ?? 0) }}
-            </div>
-
-            <div v-else-if="col === 'os'" class="node-list__cell node-list__os" :style="getColumnStyle('os')">
-              <img :src="getOSImage(node.os)" :alt="getOSName(node.os)">
-              <span>{{ getOSName(node.os) }}</span>
-            </div>
-
-            <div v-else-if="col === 'cpu'" class="node-list__cell node-list__resource" :style="getColumnStyle('cpu')">
-              <div class="node-list__resource-line md-number">
-                <span>{{ (node.cpu ?? 0).toFixed(1) }}%</span>
-                <small>{{ node.load.toFixed(2) ?? 0 }}, {{ node.load5.toFixed(2) ?? 0 }}, {{ node.load15.toFixed(2) ?? 0 }}</small>
-              </div>
-              <div class="md-progress">
-                <div class="md-progress__bar" :style="{ width: `${node.cpu ?? 0}%`, backgroundColor: statusColor(getStatus(node.cpu ?? 0)) }" />
-              </div>
-            </div>
-
-            <div v-else-if="col === 'mem'" class="node-list__cell node-list__resource" :style="getColumnStyle('mem')">
-              <div class="node-list__resource-line md-number">
-                <span>{{ memPercent(node).toFixed(1) }}%</span>
-                <small>{{ formatBytes(node.ram ?? 0) }} / {{ formatBytes(node.mem_total ?? 0) }}</small>
-              </div>
-              <div class="md-progress">
-                <div class="md-progress__bar" :style="{ width: `${memPercent(node)}%`, backgroundColor: statusColor(getStatus(memPercent(node))) }" />
-              </div>
-            </div>
-
-            <div v-else-if="col === 'disk'" class="node-list__cell node-list__resource" :style="getColumnStyle('disk')">
-              <div class="node-list__resource-line md-number">
-                <span>{{ diskPercent(node).toFixed(1) }}%</span>
-                <small>{{ formatBytes(node.disk ?? 0) }} / {{ formatBytes(node.disk_total ?? 0) }}</small>
-              </div>
-              <div class="md-progress">
-                <div class="md-progress__bar" :style="{ width: `${diskPercent(node)}%`, backgroundColor: statusColor(getStatus(diskPercent(node))) }" />
-              </div>
-            </div>
-
-            <div v-else-if="col === 'rate'" class="node-list__cell node-list__rate md-number" :style="getColumnStyle('rate')">
-              <span :style="{ color: themeColors.success }">↑{{ formatBytesPerSecond(node.net_out ?? 0) }}</span>
-              <span :style="{ color: themeColors.primary }">↓{{ formatBytesPerSecond(node.net_in ?? 0) }}</span>
-            </div>
-
-            <div v-else-if="col === 'traffic'" class="node-list__cell node-list__resource" :style="getColumnStyle('traffic')">
-              <div class="node-list__resource-line md-number">
-                <span v-if="showTrafficProgress(node)">{{ getTrafficUsedPercentage(node).toFixed(1) }}%</span>
-                <span v-else>∞</span>
-                <small>{{ formatBytes(getTrafficUsed(node)) }} / <template v-if="showTrafficProgress(node)">{{ formatBytes(node.traffic_limit) }}</template><template v-else>∞</template></small>
-              </div>
-              <TrafficProgress
-                :upload="node.net_total_up ?? 0"
-                :download="node.net_total_down ?? 0"
-                :traffic-limit="node.traffic_limit"
-                :traffic-limit-type="(node.traffic_limit_type || 'sum')"
-                height="6px"
-              />
-            </div>
-          </template>
+          <img
+            class="node-list-card__os-logo"
+            :src="getOSImage(node.os)"
+            :alt="getOSName(node.os)"
+            :title="`${getOSName(node.os)} / ${node.arch}`"
+          >
         </div>
 
-        <div v-if="!node.online" class="node-list__offline-overlay" aria-hidden="true">
-          <img class="node-list__flag" :src="getFlagSrc(node.region)" :alt="getRegionDisplayName(node.region)">
+        <div class="node-list-card__metrics">
+          <div class="node-list-card__metric">
+            <div class="node-list-card__metric-head">
+              <span class="md-label">CPU</span>
+              <span class="md-number">{{ (node.cpu ?? 0).toFixed(1) }}%</span>
+            </div>
+            <md-linear-progress
+              class="md-progress"
+              :value="progressValue(node.cpu ?? 0)"
+              aria-label="CPU"
+              :style="{ '--md-linear-progress-active-indicator-color': statusColor(getStatus(node.cpu ?? 0)) }"
+            />
+            <span class="node-list-card__hint md-number">{{ formatLoad(node) }}</span>
+          </div>
+
+          <div class="node-list-card__metric">
+            <div class="node-list-card__metric-head">
+              <span class="md-label">内存</span>
+              <span class="md-number">{{ memPercent(node).toFixed(1) }}%</span>
+            </div>
+            <md-linear-progress
+              class="md-progress"
+              :value="progressValue(memPercent(node))"
+              aria-label="内存"
+              :style="{ '--md-linear-progress-active-indicator-color': statusColor(getStatus(memPercent(node))) }"
+            />
+            <span class="node-list-card__hint md-number">{{ formatBytes(node.ram ?? 0) }} / {{ formatBytes(node.mem_total ?? 0) }}</span>
+          </div>
+
+          <div class="node-list-card__metric">
+            <div class="node-list-card__metric-head">
+              <span class="md-label">硬盘</span>
+              <span class="md-number">{{ diskPercent(node).toFixed(1) }}%</span>
+            </div>
+            <md-linear-progress
+              class="md-progress"
+              :value="progressValue(diskPercent(node))"
+              aria-label="硬盘"
+              :style="{ '--md-linear-progress-active-indicator-color': statusColor(getStatus(diskPercent(node))) }"
+            />
+            <span class="node-list-card__hint md-number">{{ formatBytes(node.disk ?? 0) }} / {{ formatBytes(node.disk_total ?? 0) }}</span>
+          </div>
+
+          <div class="node-list-card__metric">
+            <div class="node-list-card__metric-head">
+              <span class="md-label">流量</span>
+              <span class="md-number">
+                <template v-if="showTrafficProgress(node)">{{ getTrafficUsedPercentage(node).toFixed(1) }}%</template>
+                <template v-else>∞</template>
+              </span>
+            </div>
+            <TrafficProgress
+              :upload="node.net_total_up ?? 0"
+              :download="node.net_total_down ?? 0"
+              :traffic-limit="node.traffic_limit"
+              :traffic-limit-type="(node.traffic_limit_type || 'sum')"
+              height="6px"
+            />
+            <span class="node-list-card__hint md-number">
+              {{ formatBytes(getTrafficUsed(node)) }} /
+              <template v-if="showTrafficProgress(node)">{{ formatBytes(node.traffic_limit) }}</template>
+              <template v-else>∞</template>
+            </span>
+          </div>
+        </div>
+
+        <div class="node-list-card__side">
+          <div class="node-list-card__rate md-number">
+            <span :style="{ color: themeColors.success }">↑ {{ formatBytesPerSecond(node.net_out ?? 0) }}</span>
+            <span :style="{ color: themeColors.primary }">↓ {{ formatBytesPerSecond(node.net_in ?? 0) }}</span>
+          </div>
+
+          <div v-if="getNodeTags(node).length > 0" class="node-list-card__tags">
+            <span v-for="(tag, index) in getNodeTags(node)" :key="index" class="md-chip" :style="tagStyle(tag.color)">
+              {{ tag.text }}
+            </span>
+          </div>
+
+          <button
+            v-if="appStore.showPingChartButton"
+            class="material-icon-button node-list-card__chart-button"
+            type="button"
+            title="查看延迟图表"
+            aria-label="查看延迟图表"
+            @click.stop="openPingChart(node)"
+          >
+            <span class="material-symbols-rounded">show_chart</span>
+          </button>
+        </div>
+
+        <div v-if="!node.online" class="node-list-card__offline-overlay" aria-hidden="true">
+          <img class="node-list-card__flag" :src="getFlagSrc(node.region)" :alt="getRegionDisplayName(node.region)">
           <strong>{{ node.name }}</strong>
           <span class="md-number">最后在线 {{ formatDateTime(node.time) }}</span>
         </div>
-      </div>
+      </article>
     </div>
   </div>
 </template>
@@ -373,163 +309,179 @@ function diskPercent(node: NodeData) {
 <style scoped lang="scss">
 .node-list-wrapper {
   min-width: 0;
-  overflow-x: auto;
 }
 
 .node-list {
-  min-width: fit-content;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.node-list__header,
-.node-list__grid {
+.node-list-card {
   display: grid;
+  min-width: 0;
+  min-height: 96px;
+  grid-template-columns: minmax(250px, 1.1fr) minmax(420px, 2fr) minmax(180px, 0.8fr);
+  gap: 18px;
   align-items: center;
+  padding: 12px 14px;
 }
 
-.node-list__header {
-  min-height: 44px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--md-sys-color-outline-variant);
-  background: var(--md-sys-color-surface-container-high);
-}
-
-.node-list__header-cell {
-  display: inline-flex;
+.node-list-card__identity {
+  display: flex;
   min-width: 0;
   align-items: center;
-  gap: 4px;
-  color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  user-select: none;
+  gap: 10px;
 }
 
-.node-list__header-cell .material-symbols-rounded {
-  font-size: 14px;
+.node-list-card__status {
+  min-height: 28px;
+  flex: 0 0 auto;
+  padding: 4px 10px;
 }
 
-.node-list__row {
-  position: relative;
-  min-height: var(--md-app-row-height);
-  padding: 8px 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
-  cursor: pointer;
-  transition: background-color 160ms ease;
-
-  &:hover {
-    background: color-mix(in srgb, var(--md-sys-color-on-surface) 5%, transparent);
-  }
-
-  &:last-child {
-    border-bottom: 0;
-  }
-}
-
-.node-list__cell {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.node-list__cell--status,
-.node-list__cell--center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.node-list__chart-button {
-  width: 32px;
-  height: 32px;
-}
-
-.node-list__name {
-  color: var(--md-sys-color-on-surface);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.node-list__flag {
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  object-fit: cover;
-}
-
-.node-list__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-}
-
-.node-list__os {
+.node-list-card__status-badge {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  img {
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-  }
-}
-
-.node-list__resource {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.node-list__resource-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  small {
-    margin-left: auto;
-    overflow: hidden;
-    color: var(--md-sys-color-on-surface-variant);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-.node-list__rate {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.node-list__status-badge {
-  display: inline-flex;
-  min-height: 22px;
+  min-height: 24px;
+  flex: 0 0 auto;
   align-items: center;
   border-radius: 999px;
-  padding: 0 8px;
+  padding: 0 9px;
   color: var(--md-sys-color-on-error-container);
   background: var(--md-sys-color-error-container);
   font-size: 11px;
   font-weight: 500;
 }
 
-.node-list__status-badge--online {
+.node-list-card__status-badge--online {
   color: var(--md-chart-success);
   background: color-mix(in srgb, var(--md-chart-success) 18%, transparent);
 }
 
-.node-list__offline-overlay {
-  position: absolute;
-  inset: 0 0 0 auto;
-  z-index: 3;
+.node-list-card__flag {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.node-list-card__name-stack {
   display: flex;
-  width: min(72%, 620px);
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.node-list-card__name {
+  overflow: hidden;
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-list-card__meta {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.node-list-card__os-logo {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.node-list-card__metrics {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
   align-items: center;
+}
+
+.node-list-card__metric {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.node-list-card__metric-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.node-list-card__hint {
+  overflow: hidden;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-list-card__side {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 10px;
+  align-items: center;
+}
+
+.node-list-card__rate {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--md-sys-color-on-surface);
+  font-size: 12px;
+}
+
+.node-list-card__tags {
+  display: flex;
+  min-width: 0;
+  max-height: 32px;
+  flex-wrap: wrap;
+  grid-column: 1 / -1;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.node-list-card__tags .md-chip {
+  min-height: 28px;
+  padding: 4px 10px;
+}
+
+.node-list-card__chart-button {
+  width: 34px;
+  height: 34px;
+  grid-row: 1;
+  grid-column: 2;
+}
+
+.node-list-card__offline-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 10px;
   padding: 0 18px;
   color: var(--md-sys-color-on-surface-variant);
@@ -546,7 +498,63 @@ function diskPercent(node: NodeData) {
   }
 }
 
-.node-list__row:hover .node-list__offline-overlay {
+.node-list-card:hover .node-list-card__offline-overlay,
+.node-list-card:focus-visible .node-list-card__offline-overlay {
   opacity: 0;
+}
+
+@media (max-width: 1180px) {
+  .node-list-card {
+    grid-template-columns: 1fr;
+  }
+
+  .node-list-card__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .node-list-card__side {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .node-list {
+    gap: 8px;
+  }
+
+  .node-list-card {
+    min-height: 0;
+    gap: 14px;
+    padding: 12px;
+  }
+
+  .node-list-card__identity {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .node-list-card__name-stack {
+    flex-basis: calc(100% - 86px);
+  }
+
+  .node-list-card__metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .node-list-card__side {
+    grid-template-columns: 1fr;
+  }
+
+  .node-list-card__chart-button {
+    grid-row: auto;
+    grid-column: auto;
+    justify-self: flex-start;
+  }
+
+  .node-list-card__offline-overlay {
+    flex-wrap: wrap;
+    padding: 16px;
+    text-align: center;
+  }
 }
 </style>

@@ -35,25 +35,6 @@ interface AppearanceSettingsOverrides {
   backgroundOverlay?: number
 }
 
-/** 默认的 List 视图列配置 */
-const DEFAULT_LIST_VIEW_COLUMNS = ['status', 'region', 'name', 'tags', 'uptime', 'os', 'cpu', 'mem', 'disk', 'traffic', 'rate'] as const
-type ListViewColumn = typeof DEFAULT_LIST_VIEW_COLUMNS[number]
-
-/** 默认的 List 视图列宽度配置 */
-const DEFAULT_LIST_COLUMN_WIDTHS: Record<string, string> = {
-  status: '76px',
-  region: '32px',
-  name: 'minmax(200px, 1fr)',
-  tags: '200px',
-  uptime: 'minmax(180px, 0.6fr)',
-  os: '120px',
-  cpu: '180px',
-  mem: '180px',
-  disk: '180px',
-  traffic: '180px',
-  rate: '140px',
-}
-
 /** 默认的字节精度配置 */
 const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
   B: 0,
@@ -229,36 +210,6 @@ const useAppStore = defineStore('app', () => {
     return '"TCloud Number VF", "MiSans VF", sans-serif'
   })
 
-  // 计算属性：List 视图显示列配置
-  const listViewColumns = computed<ListViewColumn[]>(() => {
-    const settings = themeSettings.value
-    const defaultColumns = [...DEFAULT_LIST_VIEW_COLUMNS]
-
-    if (!settings || typeof settings.listViewColumns !== 'string') {
-      return defaultColumns
-    }
-
-    try {
-      const parsed = JSON.parse(settings.listViewColumns)
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        return defaultColumns
-      }
-
-      // 验证每个列名是否有效
-      const validColumns: ListViewColumn[] = []
-      for (const col of parsed) {
-        if (typeof col === 'string' && DEFAULT_LIST_VIEW_COLUMNS.includes(col as ListViewColumn)) {
-          validColumns.push(col as ListViewColumn)
-        }
-      }
-
-      return validColumns.length > 0 ? validColumns : defaultColumns
-    }
-    catch {
-      return defaultColumns
-    }
-  })
-
   // 计算属性：单分组时是否隐藏 Tab
   const hideSingleGroupTab = computed<boolean>(() => {
     const settings = themeSettings.value
@@ -268,131 +219,11 @@ const useAppStore = defineStore('app', () => {
     return true
   })
 
-  // 计算属性：List 视图列宽度配置
-  const listColumnWidths = computed<Record<string, string>>(() => {
-    const settings = themeSettings.value
-    const defaultWidths = { ...DEFAULT_LIST_COLUMN_WIDTHS }
-
-    if (!settings || typeof settings.listColumnWidths !== 'string') {
-      return defaultWidths
-    }
-
-    try {
-      const parsed = JSON.parse(settings.listColumnWidths)
-      if (typeof parsed !== 'object' || parsed === null) {
-        return defaultWidths
-      }
-
-      // 合并配置，保留有效列的宽度
-      const mergedWidths = { ...defaultWidths }
-      for (const col of DEFAULT_LIST_VIEW_COLUMNS) {
-        if (typeof parsed[col] === 'string' && parsed[col].trim()) {
-          mergedWidths[col] = parsed[col].trim()
-        }
-      }
-
-      return mergedWidths
-    }
-    catch {
-      return defaultWidths
-    }
-  })
-
-  // 计算属性：List 视图列间距配置
-  const listColumnGap = computed<string>(() => {
-    const settings = themeSettings.value
-    if (settings && typeof settings.listColumnGap === 'string' && settings.listColumnGap.trim()) {
-      return settings.listColumnGap.trim()
-    }
-    return '12px'
-  })
-
-  // 计算属性：List 视图列内边距配置
-  const listColumnPadding = computed<Record<string, string>>(() => {
-    const settings = themeSettings.value
-    const defaultPadding: Record<string, string> = {}
-
-    if (!settings || typeof settings.listColumnPadding !== 'string') {
-      return defaultPadding
-    }
-
-    try {
-      const parsed = JSON.parse(settings.listColumnPadding)
-      if (typeof parsed !== 'object' || parsed === null) {
-        return defaultPadding
-      }
-
-      // 提取有效的内边距配置
-      const validPadding: Record<string, string> = {}
-      for (const col of DEFAULT_LIST_VIEW_COLUMNS) {
-        if (typeof parsed[col] === 'string' && parsed[col].trim()) {
-          validPadding[col] = parsed[col].trim()
-        }
-      }
-
-      return validPadding
-    }
-    catch {
-      return defaultPadding
-    }
-  })
-
-  // 计算属性：List 视图列外边距配置
-  const listColumnMargin = computed<Record<string, string>>(() => {
-    const settings = themeSettings.value
-    const defaultMargin: Record<string, string> = {}
-
-    if (!settings || typeof settings.listColumnMargin !== 'string') {
-      return defaultMargin
-    }
-
-    try {
-      const parsed = JSON.parse(settings.listColumnMargin)
-      if (typeof parsed !== 'object' || parsed === null) {
-        return defaultMargin
-      }
-
-      // 提取有效的外边距配置
-      const validMargin: Record<string, string> = {}
-      for (const col of DEFAULT_LIST_VIEW_COLUMNS) {
-        if (typeof parsed[col] === 'string' && parsed[col].trim()) {
-          validMargin[col] = parsed[col].trim()
-        }
-      }
-
-      return validMargin
-    }
-    catch {
-      return defaultMargin
-    }
-  })
-
-  // 计算属性：List 视图行高度配置
-  const listRowHeight = computed<string>(() => {
-    const settings = themeSettings.value
-    if (settings && typeof settings.listRowHeight === 'string' && settings.listRowHeight.trim()) {
-      return settings.listRowHeight.trim()
-    }
-    return ''
-  })
-
-  // 计算属性：List 视图状态显示样式（tag 或 badge）
+  // 计算属性：长条卡片视图状态显示样式（tag 或 badge）
   const listStatusStyle = computed<'tag' | 'badge'>(() => {
     const settings = themeSettings.value
     if (settings && typeof settings.listStatusStyle === 'string') {
       const style = settings.listStatusStyle
-      if (style === 'tag' || style === 'badge') {
-        return style
-      }
-    }
-    return 'tag'
-  })
-
-  // 计算属性：List 视图标签显示样式（tag 或 badge）
-  const listTagsStyle = computed<'tag' | 'badge'>(() => {
-    const settings = themeSettings.value
-    if (settings && typeof settings.listTagsStyle === 'string') {
-      const style = settings.listTagsStyle
       if (style === 'tag' || style === 'badge') {
         return style
       }
@@ -781,15 +612,8 @@ const useAppStore = defineStore('app', () => {
     materialThemeTokens,
     cardProgressLayout,
     numberFontFamily,
-    listViewColumns,
     hideSingleGroupTab,
-    listColumnWidths,
-    listColumnGap,
-    listColumnPadding,
-    listColumnMargin,
-    listRowHeight,
     listStatusStyle,
-    listTagsStyle,
     showPingChartButton,
     uptimeTagWrap,
     uptimeFormat,
