@@ -4,6 +4,14 @@ import { useAppStore } from '@/stores/app'
 
 const appStore = useAppStore()
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function toPercent(value: number) {
+  return `${Math.round(value * 1000) / 10}%`
+}
+
 // 背景加载状态
 const isLoaded = ref(false)
 const hasError = ref(false)
@@ -18,14 +26,21 @@ const backgroundStyle = computed(() => {
 
 // 计算遮罩样式
 const overlayStyle = computed(() => {
-  if (appStore.backgroundOverlay <= 0) {
-    return {}
-  }
+  const baseOpacity = clamp(appStore.backgroundOverlay, 0, 100) / 100
+  const overlayOpacity = baseOpacity > 0 && appStore.backgroundType === 'video'
+    ? clamp(baseOpacity + 0.1, 0, 1)
+    : baseOpacity
+  const edgeOpacity = overlayOpacity > 0
+    ? clamp(overlayOpacity * 0.55 + 0.08, 0, 0.52)
+    : 0
+  const surfaceTintOpacity = overlayOpacity > 0
+    ? clamp(overlayOpacity * 0.38, 0, 0.32)
+    : 0
 
   return {
-    backgroundColor: appStore.isDark
-      ? `rgba(0, 0, 0, ${appStore.backgroundOverlay / 100})`
-      : `rgba(255, 255, 255, ${appStore.backgroundOverlay / 100})`,
+    '--background-overlay-weight': toPercent(overlayOpacity),
+    '--background-edge-weight': toPercent(edgeOpacity),
+    '--background-surface-tint-weight': toPercent(surfaceTintOpacity),
   }
 })
 
@@ -142,7 +157,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="showBackground" class="background-container">
+  <div v-if="showBackground" class="background-container" :class="{ 'is-dark': appStore.isDark }">
     <!-- 默认背景（渐变背景，用于未配置或加载失败时） -->
     <Transition name="fade">
       <div v-if="showDefaultBackground" class="background-default" />
@@ -208,7 +223,7 @@ onUnmounted(() => {
   background: var(--md-sys-color-surface-container-lowest);
 }
 
-html.dark .background-default {
+.background-container.is-dark .background-default {
   background: var(--md-sys-color-surface-dim);
 }
 
@@ -216,7 +231,7 @@ html.dark .background-default {
   background: var(--md-sys-color-surface-container-low);
 }
 
-html.dark .background-loading {
+.background-container.is-dark .background-loading {
   background: var(--md-sys-color-surface-container);
 }
 
@@ -244,12 +259,50 @@ html.dark .background-loading {
 }
 
 .background-overlay {
+  --background-overlay-weight: 0%;
+  --background-edge-weight: 0%;
+  --background-surface-tint-weight: 0%;
+
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  background-color: color-mix(in srgb, var(--md-sys-color-surface) var(--background-overlay-weight), transparent);
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--md-sys-color-surface-container-lowest) var(--background-edge-weight), transparent) 0%,
+      transparent 36%,
+      color-mix(in srgb, var(--md-sys-color-surface) var(--background-edge-weight), transparent) 100%
+    ),
+    radial-gradient(
+      ellipse at center,
+      transparent 58%,
+      color-mix(in srgb, var(--md-sys-color-surface) var(--background-edge-weight), transparent) 100%
+    );
   pointer-events: none;
+}
+
+.background-container.is-dark .background-overlay {
+  background-color: color-mix(in srgb, var(--md-sys-color-scrim) var(--background-overlay-weight), transparent);
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--md-sys-color-surface) var(--background-surface-tint-weight), transparent) 0%,
+      transparent 34%,
+      color-mix(in srgb, var(--md-sys-color-scrim) var(--background-edge-weight), transparent) 100%
+    ),
+    radial-gradient(
+      ellipse at center,
+      transparent 54%,
+      color-mix(in srgb, var(--md-sys-color-scrim) var(--background-edge-weight), transparent) 100%
+    ),
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--md-sys-color-surface) var(--background-surface-tint-weight), transparent),
+      color-mix(in srgb, var(--md-sys-color-surface) var(--background-surface-tint-weight), transparent)
+    );
 }
 
 // 过渡动画
