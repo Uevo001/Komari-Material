@@ -12,6 +12,7 @@ defineOptions({
 })
 
 const NodeCard = defineAsyncComponent(() => import('@/components/NodeCard.vue'))
+const NodeCompactList = defineAsyncComponent(() => import('@/components/NodeCompactList.vue'))
 const NodeGeneralCards = defineAsyncComponent(() => import('@/components/NodeGeneralCards.vue'))
 const NodeList = defineAsyncComponent(() => import('@/components/NodeList.vue'))
 
@@ -211,6 +212,15 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
             >
               <span class="material-symbols-rounded">view_list</span>
             </button>
+            <button
+              class="md-segmented-control__button"
+              :class="{ 'is-active': appStore.nodeViewMode === 'compact-list' }"
+              type="button"
+              title="双栏列表视图"
+              @click="appStore.nodeViewMode = 'compact-list'"
+            >
+              <span class="material-symbols-rounded">view_comfy</span>
+            </button>
           </div>
         </div>
       </div>
@@ -222,6 +232,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
         <NodeList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'list'" :nodes="nodeList" @click="handleNodeClick" />
 
+        <NodeCompactList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'compact-list'" :nodes="nodeList" @click="handleNodeClick" />
         <div v-else class="md-empty">
           <span class="material-symbols-rounded">inbox</span>
           <span>暂无节点</span>
