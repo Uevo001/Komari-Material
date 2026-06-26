@@ -157,7 +157,7 @@ const storageInfo = computed<InfoItem[]>(() => [
         </article>
       </section>
 
-      <div class="instance-detail__divider" />
+      <div class="instance-detail__divider md-wavy-divider" />
 
       <section class="instance-charts">
         <div class="md-segmented-control instance-charts__tabs" role="group" aria-label="图表类型">
@@ -291,9 +291,7 @@ const storageInfo = computed<InfoItem[]>(() => [
 }
 
 .instance-detail__divider {
-  height: 1px;
   margin: 0 16px;
-  background: var(--md-sys-color-outline-variant);
 }
 
 .instance-charts {

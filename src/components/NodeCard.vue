@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
 import { computed, h } from 'vue'
+import NodePingSummary from '@/components/NodePingSummary.vue'
 import PingChart from '@/components/PingChart.vue'
 import TrafficProgress from '@/components/TrafficProgress.vue'
 import { useAppStore } from '@/stores/app'
-import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, getStatus } from '@/utils/helper'
+import { formatBytesWithConfig, formatDateTime, getStatus } from '@/utils/helper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
 import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
 import { formatPriceWithCycle, getDaysUntilExpired, getExpireStatus, getExpireStatusHexColor, parseTags } from '@/utils/tagHelper'
@@ -21,7 +22,6 @@ const appStore = useAppStore()
 const themeColors = computed(() => appStore.materialThemeTokens.chartColors)
 
 const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
-const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
 const offlineTime = computed(() => formatDateTime(props.node.time))
 
 const cpuStatus = computed(() => getStatus(props.node.cpu ?? 0))
@@ -132,6 +132,10 @@ function statusColor(status: 'success' | 'warning' | 'error') {
   return themeColors.value.error
 }
 
+function progressValue(percentage: number) {
+  return Math.min(Math.max(percentage, 0), 100) / 100
+}
+
 function tagStyle(color: string) {
   return {
     color,
@@ -209,9 +213,12 @@ function openPingChart() {
             <span class="md-label">CPU</span>
             <span class="md-number">{{ (props.node.cpu ?? 0).toFixed(1) }}%</span>
           </div>
-          <div class="md-progress">
-            <div class="md-progress__bar" :style="{ width: `${props.node.cpu ?? 0}%`, backgroundColor: statusColor(cpuStatus) }" />
-          </div>
+          <md-linear-progress
+            class="md-progress"
+            :value="progressValue(props.node.cpu ?? 0)"
+            aria-label="CPU"
+            :style="{ '--md-linear-progress-active-indicator-color': statusColor(cpuStatus) }"
+          />
           <span class="node-card__hint md-number">{{ node.load.toFixed(2) ?? 0 }}, {{ node.load5.toFixed(2) ?? 0 }}, {{ node.load15.toFixed(2) ?? 0 }}</span>
         </div>
 
@@ -220,9 +227,12 @@ function openPingChart() {
             <span class="md-label">内存</span>
             <span class="md-number">{{ memPercentage.toFixed(1) }}%</span>
           </div>
-          <div class="md-progress">
-            <div class="md-progress__bar" :style="{ width: `${memPercentage}%`, backgroundColor: statusColor(memStatus) }" />
-          </div>
+          <md-linear-progress
+            class="md-progress"
+            :value="progressValue(memPercentage)"
+            aria-label="内存"
+            :style="{ '--md-linear-progress-active-indicator-color': statusColor(memStatus) }"
+          />
           <span class="node-card__hint md-number">{{ formatBytes(props.node.ram ?? 0) }} / {{ formatBytes(props.node.mem_total ?? 0) }}</span>
         </div>
 
@@ -231,9 +241,12 @@ function openPingChart() {
             <span class="md-label">硬盘</span>
             <span class="md-number">{{ diskPercentage.toFixed(1) }}%</span>
           </div>
-          <div class="md-progress">
-            <div class="md-progress__bar" :style="{ width: `${diskPercentage}%`, backgroundColor: statusColor(diskStatus) }" />
-          </div>
+          <md-linear-progress
+            class="md-progress"
+            :value="progressValue(diskPercentage)"
+            aria-label="硬盘"
+            :style="{ '--md-linear-progress-active-indicator-color': statusColor(diskStatus) }"
+          />
           <span class="node-card__hint md-number">{{ formatBytes(props.node.disk ?? 0) }} / {{ formatBytes(props.node.disk_total ?? 0) }}</span>
         </div>
 
@@ -260,13 +273,11 @@ function openPingChart() {
         </div>
       </div>
 
-      <div class="node-card__row">
-        <span class="md-label">网络速率</span>
-        <span class="node-card__rate md-number">
-          <span :style="{ color: themeColors.success }">↑ {{ formatBytesPerSecond(props.node.net_out ?? 0) }}</span>
-          <span :style="{ color: themeColors.primary }">↓ {{ formatBytesPerSecond(props.node.net_in ?? 0) }}</span>
-        </span>
-      </div>
+      <NodePingSummary
+        :uuid="props.node.uuid"
+        :upload-speed="props.node.net_out ?? 0"
+        :download-speed="props.node.net_in ?? 0"
+      />
 
       <div v-if="mergedTags.length > 0" class="node-card__row node-card__row--tags">
         <span class="md-label">标签</span>
@@ -356,7 +367,6 @@ function openPingChart() {
   gap: 12px;
 }
 
-.node-card__rate,
 .node-card__tag-row {
   display: inline-flex;
   min-width: 0;

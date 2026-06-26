@@ -174,20 +174,20 @@ const railColor = computed(() => 'var(--md-sys-color-surface-container-highest)'
     position: relative;
     display: flex;
     overflow: hidden;
-    height: 8px;
+    height: 6px;
     border-radius: 999px;
-    transition: background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+    background: var(--md-sys-color-surface-container-highest);
+    transition: background-color 250ms cubic-bezier(0.4, 0, 0.6, 1);
   }
 
   &__fill {
     position: relative;
     height: 100%;
     transition:
-      max-width var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
-      width var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
-      background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+      max-width 250ms cubic-bezier(0.4, 0, 0.6, 1),
+      width 250ms cubic-bezier(0.4, 0, 0.6, 1),
+      background-color 250ms cubic-bezier(0.4, 0, 0.6, 1);
 
-    // 末端圆角
     &--last {
       border-top-right-radius: 999px;
       border-bottom-right-radius: 999px;

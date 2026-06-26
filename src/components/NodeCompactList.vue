@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
 import { computed, h } from 'vue'
+import NodePingSummary from '@/components/NodePingSummary.vue'
 import PingChart from '@/components/PingChart.vue'
 import TrafficProgress from '@/components/TrafficProgress.vue'
 import { useAppStore } from '@/stores/app'
-import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
+import { formatBytesWithConfig, formatDateTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
 import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
 import { formatPriceWithCycle, getDaysUntilExpired, getExpireStatus, parseTags } from '@/utils/tagHelper'
@@ -21,7 +22,6 @@ const appStore = useAppStore()
 const themeColors = computed(() => appStore.materialThemeTokens.chartColors)
 
 const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
-const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
 const formatUptime = (seconds: number) => formatUptimeWithFormat(seconds, appStore.uptimeFormat)
 
 const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
@@ -286,13 +286,15 @@ function diskPercent(node: NodeData) {
           </div>
         </div>
 
-        <footer class="node-compact-card__footer">
-          <div class="node-compact-card__rate md-number">
-            <span :style="{ color: themeColors.success }">↑ {{ formatBytesPerSecond(node.net_out ?? 0) }}</span>
-            <span :style="{ color: themeColors.primary }">↓ {{ formatBytesPerSecond(node.net_in ?? 0) }}</span>
-          </div>
+        <NodePingSummary
+          :uuid="node.uuid"
+          :upload-speed="node.net_out ?? 0"
+          :download-speed="node.net_in ?? 0"
+          density="compact"
+        />
 
-          <div v-if="getNodeTags(node).length > 0" class="node-compact-card__tags">
+        <footer v-if="getNodeTags(node).length > 0" class="node-compact-card__footer">
+          <div class="node-compact-card__tags">
             <span v-for="(tag, index) in getNodeTags(node)" :key="index" class="md-chip" :style="tagStyle(tag.color)">
               {{ tag.text }}
             </span>
@@ -464,17 +466,6 @@ function diskPercent(node: NodeData) {
 
 .node-compact-card__footer {
   align-items: flex-start;
-}
-
-.node-compact-card__rate {
-  display: flex;
-  min-width: max-content;
-  flex: 0 0 auto;
-  flex-wrap: wrap;
-  gap: 3px 8px;
-  color: var(--md-sys-color-on-surface);
-  font-size: 11px;
-  line-height: 1.4;
 }
 
 .node-compact-card__tags {

@@ -55,8 +55,13 @@ const groups = computed(() => {
   ]
 })
 
+const hiddenGroupsFromAllSet = computed(() => new Set(appStore.hiddenGroupsFromAll))
+const hasGroupsHiddenFromAll = computed(() => {
+  return nodesStore.groups.some(group => hiddenGroupsFromAllSet.value.has(group.trim()))
+})
+
 const showGroupTabs = computed(() => {
-  if (appStore.hideSingleGroupTab && nodesStore.groups.length <= 1) {
+  if (appStore.hideSingleGroupTab && nodesStore.groups.length <= 1 && !hasGroupsHiddenFromAll.value) {
     return false
   }
   return true
@@ -96,7 +101,7 @@ function isNodeMatchSearch(node: typeof nodesStore.nodes[number], search: string
 
 const nodeList = computed(() => {
   let filteredNodes = appStore.nodeSelectedGroup === 'all'
-    ? nodesStore.nodes
+    ? nodesStore.nodes.filter(node => !hiddenGroupsFromAllSet.value.has((node.group || '').trim()))
     : nodesStore.nodes.filter(node => node.group === appStore.nodeSelectedGroup)
 
   if (debouncedSearchText.value.trim()) {
@@ -155,7 +160,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
     <NodeGeneralCards />
 
-    <div class="home-view__divider" />
+    <div class="home-view__divider md-wavy-divider" />
 
     <section class="node-info">
       <div class="node-toolbar">
@@ -233,6 +238,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
         <NodeList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'list'" :nodes="nodeList" @click="handleNodeClick" />
 
         <NodeCompactList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'compact-list'" :nodes="nodeList" @click="handleNodeClick" />
+
         <div v-else class="md-empty">
           <span class="material-symbols-rounded">inbox</span>
           <span>暂无节点</span>
@@ -248,9 +254,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 }
 
 .home-view__divider {
-  height: 1px;
   margin: 0 16px;
-  background: var(--md-sys-color-outline-variant);
 }
 
 .node-info {

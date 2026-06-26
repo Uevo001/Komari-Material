@@ -1,10 +1,10 @@
 {
   "name": "Komari Material",
   "short": "Material",
-  "description": "A Material Design 3 theme for Komari",
+  "description": "A Material Design 3 theme for Komari Monitor",
   "version": "2.0.0",
-  "author": "lyimoexiao",
-  "url": "https://github.com/lyimoexiao/komari-theme-material",
+  "author": "Liebesfreud",
+  "url": "https://github.com/Liebesfreud/Komari-Material",
   "preview": "preview.png",
   "configuration": {
     "type": "managed",
@@ -16,7 +16,9 @@
       { "key": "defaultViewMode", "name": "默认视图模式", "type": "select", "default": "card", "options": "card,list,compact-list", "help": "节点列表的默认显示模式" },
       { "key": "showLoginButton", "name": "未登录状态显示登录按钮", "type": "switch", "default": true, "help": "控制未登录状态下是否显示登录按钮" },
       { "key": "showPingChartButton", "name": "显示延迟图表按钮", "type": "switch", "default": true, "help": "在节点卡片和列表中显示查看延迟图表的按钮" },
+      { "key": "showNodePingStats", "name": "显示节点延迟与丢包摘要", "type": "switch", "default": true, "help": "在节点卡片和列表中显示最近 1 小时的延迟与丢包摘要" },
       { "key": "hideSingleGroupTab", "name": "单分组时隐藏 Tab", "type": "switch", "default": true, "help": "当只有一个分组时，隐藏分组选择标签页" },
+      { "key": "hiddenGroupsFromAll", "name": "全部节点隐藏分组", "type": "string", "default": "", "help": "填写后，这些分组不会显示在全部节点中；选择对应分组时仍正常显示。多个分组用逗号、分号或竖线分隔" },
       { "name": "卡片视图", "type": "title" },
       { "key": "lightCardContrast", "name": "亮色卡片高对比度", "type": "switch", "default": false, "help": "启用后，在亮色模式下为卡片添加阴影和边框，增强与背景的对比度" },
       { "key": "cardProgressLayout", "name": "卡片进度条布局", "type": "select", "default": "2col", "options": "1col,2col", "help": "节点卡片中进度条的布局方式：1col 为一行一列，2col 为一行两列" },

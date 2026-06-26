@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
 import { computed, h } from 'vue'
+import NodePingSummary from '@/components/NodePingSummary.vue'
 import PingChart from '@/components/PingChart.vue'
 import TrafficProgress from '@/components/TrafficProgress.vue'
 import { useAppStore } from '@/stores/app'
-import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
+import { formatBytesWithConfig, formatDateTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
 import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
 import { formatPriceWithCycle, getDaysUntilExpired, getExpireStatus, parseTags } from '@/utils/tagHelper'
@@ -21,7 +22,6 @@ const appStore = useAppStore()
 const themeColors = computed(() => appStore.materialThemeTokens.chartColors)
 
 const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
-const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
 const formatUptime = (seconds: number) => formatUptimeWithFormat(seconds, appStore.uptimeFormat)
 
 const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
@@ -272,12 +272,15 @@ function diskPercent(node: NodeData) {
           </div>
         </div>
 
-        <div class="node-list-card__side">
-          <div class="node-list-card__rate md-number">
-            <span :style="{ color: themeColors.success }">↑ {{ formatBytesPerSecond(node.net_out ?? 0) }}</span>
-            <span :style="{ color: themeColors.primary }">↓ {{ formatBytesPerSecond(node.net_in ?? 0) }}</span>
-          </div>
+        <NodePingSummary
+          class="node-list-card__ping"
+          :uuid="node.uuid"
+          :upload-speed="node.net_out ?? 0"
+          :download-speed="node.net_in ?? 0"
+          density="compact"
+        />
 
+        <div class="node-list-card__side">
           <div v-if="getNodeTags(node).length > 0" class="node-list-card__tags">
             <span v-for="(tag, index) in getNodeTags(node)" :key="index" class="md-chip" :style="tagStyle(tag.color)">
               {{ tag.text }}
@@ -322,7 +325,7 @@ function diskPercent(node: NodeData) {
   display: grid;
   min-width: 0;
   min-height: 96px;
-  grid-template-columns: minmax(250px, 1.1fr) minmax(420px, 2fr) minmax(180px, 0.8fr);
+  grid-template-columns: minmax(240px, 0.9fr) minmax(400px, 1.55fr) minmax(300px, 1fr) minmax(140px, 0.45fr);
   gap: 18px;
   align-items: center;
   padding: 12px 14px;
@@ -444,13 +447,8 @@ function diskPercent(node: NodeData) {
   align-items: center;
 }
 
-.node-list-card__rate {
-  display: flex;
+.node-list-card__ping {
   min-width: 0;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  color: var(--md-sys-color-on-surface);
-  font-size: 12px;
 }
 
 .node-list-card__tags {
@@ -503,7 +501,7 @@ function diskPercent(node: NodeData) {
   opacity: 0;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1360px) {
   .node-list-card {
     grid-template-columns: 1fr;
   }

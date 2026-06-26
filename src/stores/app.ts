@@ -27,6 +27,7 @@ interface AppearanceSettingsOverrides {
   materialDensity?: MaterialDensity
   fullWidth?: boolean
   maxPageWidth?: string
+  hiddenGroupsFromAll?: string
   backgroundEnabled?: boolean
   backgroundType?: BackgroundType
   lightBackgroundUrl?: string
@@ -42,6 +43,20 @@ const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
   MB: 1,
   GB: 1,
   TB: 2,
+}
+
+function parseHiddenGroupsFromAll(value: unknown): string[] {
+  const sourceValues = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? value.split(/[\n,，;；|]+/)
+      : []
+
+  const groups = sourceValues
+    .map(item => typeof item === 'string' ? item.trim() : '')
+    .filter(Boolean)
+
+  return Array.from(new Set(groups))
 }
 
 const useAppStore = defineStore('app', () => {
@@ -219,6 +234,18 @@ const useAppStore = defineStore('app', () => {
     return true
   })
 
+  const hiddenGroupsFromAllText = computed<string>(() => {
+    const value = themeSettings.value.hiddenGroupsFromAll
+    if (typeof value === 'string') {
+      return value
+    }
+    return parseHiddenGroupsFromAll(value).join(', ')
+  })
+
+  const hiddenGroupsFromAll = computed<string[]>(() => {
+    return parseHiddenGroupsFromAll(themeSettings.value.hiddenGroupsFromAll)
+  })
+
   // 计算属性：长条卡片视图状态显示样式（tag 或 badge）
   const listStatusStyle = computed<'tag' | 'badge'>(() => {
     const settings = themeSettings.value
@@ -236,6 +263,15 @@ const useAppStore = defineStore('app', () => {
     const settings = themeSettings.value
     if (settings && typeof settings.showPingChartButton === 'boolean') {
       return settings.showPingChartButton
+    }
+    return true
+  })
+
+  // 计算属性：是否显示节点延迟与丢包摘要
+  const showNodePingStats = computed<boolean>(() => {
+    const settings = themeSettings.value
+    if (settings && typeof settings.showNodePingStats === 'boolean') {
+      return settings.showNodePingStats
     }
     return true
   })
@@ -613,8 +649,11 @@ const useAppStore = defineStore('app', () => {
     cardProgressLayout,
     numberFontFamily,
     hideSingleGroupTab,
+    hiddenGroupsFromAllText,
+    hiddenGroupsFromAll,
     listStatusStyle,
     showPingChartButton,
+    showNodePingStats,
     uptimeTagWrap,
     uptimeFormat,
     lightCardContrast,

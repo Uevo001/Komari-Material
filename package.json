@@ -2,12 +2,29 @@
   "name": "komari-theme-material",
   "type": "module",
   "version": "2.0.0",
+  "packageManager": "pnpm@10.24.0",
+  "description": "A Material Design 3 theme for Komari Monitor.",
   "author": {
-    "name": "lyimoexiao",
-    "email": "lyimoexiao@outlook.com",
-    "url": "https://github.com/lyimoexiao"
+    "name": "Liebesfreud",
+    "email": "liebesfreudzz@gmail.com",
+    "url": "https://github.com/Liebesfreud"
   },
   "license": "MIT",
+  "homepage": "https://github.com/Liebesfreud/Komari-Material#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Liebesfreud/Komari-Material.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Liebesfreud/Komari-Material/issues"
+  },
+  "keywords": [
+    "komari",
+    "komari-theme",
+    "material-design",
+    "vue",
+    "vite"
+  ],
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   },

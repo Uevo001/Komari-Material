@@ -75,6 +75,11 @@ const maxPageWidthModel = computed<string>({
   set: value => appStore.updateAppearanceSetting('maxPageWidth', value.trim() || '1800px'),
 })
 
+const hiddenGroupsFromAllModel = computed<string>({
+  get: () => appStore.hiddenGroupsFromAllText,
+  set: value => appStore.updateAppearanceSetting('hiddenGroupsFromAll', value.trim()),
+})
+
 const backgroundEnabledModel = computed<boolean>({
   get: () => appStore.backgroundEnabled,
   set: value => appStore.updateAppearanceSetting('backgroundEnabled', value),
@@ -196,36 +201,36 @@ function setManualSeedColor(event: Event) {
         </button>
       </div>
 
-      <div class="appearance-field-grid">
-        <label class="appearance-field">
+      <div class="appearance-color-layout">
+        <label class="appearance-field appearance-field--color">
           <span>手动种子色</span>
           <span class="appearance-color-input">
             <input type="color" :value="appStore.manualMaterialSeedColor" @input="setManualSeedColor">
             <input type="text" :value="appStore.manualMaterialSeedColor" spellcheck="false" @change="setManualSeedColor">
           </span>
         </label>
-      </div>
 
-      <div class="appearance-palette-grid" aria-label="莫奈调色盘">
-        <button
-          v-for="palette in paletteOptions"
-          :key="palette.key"
-          class="appearance-palette"
-          :class="{ 'is-active': selectedPalette === palette.key }"
-          type="button"
-          @click="setPalette(palette.key)"
-        >
-          <span class="appearance-palette__swatches">
-            <span
-              v-for="color in palette.swatches"
-              :key="color"
-              class="appearance-palette__swatch"
-              :style="{ backgroundColor: color }"
-            />
-          </span>
-          <span class="appearance-palette__label">{{ palette.label }}</span>
-          <span class="appearance-palette__seed">{{ palette.seedColor }}</span>
-        </button>
+        <div class="appearance-palette-grid" aria-label="莫奈调色盘">
+          <button
+            v-for="palette in paletteOptions"
+            :key="palette.key"
+            class="appearance-palette"
+            :class="{ 'is-active': selectedPalette === palette.key }"
+            type="button"
+            :title="palette.seedColor"
+            @click="setPalette(palette.key)"
+          >
+            <span class="appearance-palette__swatches">
+              <span
+                v-for="color in palette.swatches"
+                :key="color"
+                class="appearance-palette__swatch"
+                :style="{ backgroundColor: color }"
+              />
+            </span>
+            <span class="appearance-palette__label">{{ palette.label }}</span>
+          </button>
+        </div>
       </div>
     </section>
 
@@ -260,6 +265,10 @@ function setManualSeedColor(event: Event) {
         <label class="appearance-field">
           <span>最大页面宽度</span>
           <input v-model="maxPageWidthModel" type="text" spellcheck="false" placeholder="1800px">
+        </label>
+        <label class="appearance-field appearance-field--wide">
+          <span>全部节点隐藏分组</span>
+          <input v-model="hiddenGroupsFromAllModel" type="text" spellcheck="false" placeholder="private, staging">
         </label>
       </div>
     </section>
@@ -324,44 +333,45 @@ function setManualSeedColor(event: Event) {
 <style scoped lang="scss">
 .appearance-panel {
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .appearance-section {
   display: grid;
-  gap: 14px;
-  padding-bottom: 18px;
+  gap: 10px;
+  padding-bottom: 12px;
   border-bottom: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
 }
 
 .appearance-section__header {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
 
   > .material-symbols-rounded {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    border-radius: 10px;
     color: var(--md-sys-color-on-secondary-container);
     background: var(--md-sys-color-secondary-container);
+    font-size: 18px;
   }
 
   h3 {
     margin: 0;
     color: var(--md-sys-color-on-surface);
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
     line-height: 1.25;
   }
 
   p {
-    margin: 4px 0 0;
+    margin: 2px 0 0;
     color: var(--md-sys-color-on-surface-variant);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.45;
   }
 }
@@ -371,24 +381,24 @@ function setManualSeedColor(event: Event) {
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   overflow: hidden;
   border: 1px solid var(--md-sys-color-outline);
-  border-radius: 20px;
+  border-radius: 16px;
   background: var(--md-sys-color-surface-container-low);
 }
 
 .appearance-segmented__button {
   position: relative;
   display: inline-flex;
-  min-height: 44px;
+  min-height: 36px;
   overflow: hidden;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   border: 0;
   border-right: 1px solid var(--md-sys-color-outline-variant);
-  padding: 0 10px;
+  padding: 0 8px;
   color: var(--md-sys-color-on-surface-variant);
   background: transparent;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
 
@@ -418,34 +428,43 @@ function setManualSeedColor(event: Event) {
     color: var(--md-sys-color-on-secondary-container);
     background: var(--md-sys-color-secondary-container);
   }
+
+  .material-symbols-rounded {
+    font-size: 18px;
+  }
 }
 
 .appearance-field-grid,
 .appearance-range-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
 .appearance-field,
 .appearance-switch,
 .appearance-range {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+}
+
+.appearance-field--wide {
+  grid-column: 1 / -1;
 }
 
 .appearance-field input,
 .appearance-field select {
   width: 100%;
-  min-height: 40px;
+  min-height: 34px;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 4px;
-  padding: 0 12px;
+  padding: 0 10px;
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface-container-lowest);
+  font-size: 12px;
   outline: none;
 
   &:focus {
@@ -454,10 +473,17 @@ function setManualSeedColor(event: Event) {
   }
 }
 
+.appearance-color-layout {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.62fr) minmax(0, 1.38fr);
+  gap: 8px;
+  align-items: end;
+}
+
 .appearance-color-input {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 6px;
 
   input[type='color'] {
     padding: 4px;
@@ -465,14 +491,14 @@ function setManualSeedColor(event: Event) {
 }
 
 .appearance-switch {
-  min-height: 40px;
+  min-height: 34px;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
 
   input {
     position: relative;
-    width: 52px;
-    height: 32px;
+    width: 46px;
+    height: 28px;
     appearance: none;
     border: 2px solid var(--md-sys-color-outline);
     border-radius: 999px;
@@ -485,10 +511,10 @@ function setManualSeedColor(event: Event) {
     &::before {
       content: '';
       position: absolute;
-      top: 5px;
-      left: 5px;
-      width: 18px;
-      height: 18px;
+      top: 4px;
+      left: 4px;
+      width: 16px;
+      height: 16px;
       border-radius: 999px;
       background: var(--md-sys-color-outline);
       transition:
@@ -504,37 +530,35 @@ function setManualSeedColor(event: Event) {
     }
 
     &:checked::before {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       background: var(--md-sys-color-on-primary);
-      transform: translate(16px, -3px);
+      transform: translate(14px, -3px);
     }
   }
 
   span {
     color: var(--md-sys-color-on-surface);
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 
 .appearance-palette-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .appearance-palette {
   display: grid;
-  min-height: 70px;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas:
-    'swatch label'
-    'swatch seed';
+  min-height: 38px;
+  grid-template-columns: 32px minmax(0, 1fr);
+  grid-template-areas: 'swatch label';
   align-items: center;
-  gap: 2px 10px;
+  gap: 8px;
   border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: var(--md-app-card-radius);
-  padding: 10px;
+  border-radius: 8px;
+  padding: 5px 7px;
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface-container-low);
   text-align: left;
@@ -550,9 +574,9 @@ function setManualSeedColor(event: Event) {
   grid-area: swatch;
   display: flex;
   overflow: hidden;
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
+  width: 32px;
+  height: 26px;
+  border-radius: 6px;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-sys-color-outline) 32%, transparent);
 }
 
@@ -563,19 +587,11 @@ function setManualSeedColor(event: Event) {
 .appearance-palette__label {
   grid-area: label;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.appearance-palette__seed {
-  grid-area: seed;
-  color: var(--md-sys-color-on-surface-variant);
-  font-family: var(--md-app-number-font-family);
-  font-size: 11px;
-  line-height: 1.2;
 }
 
 .appearance-range {
@@ -592,16 +608,16 @@ function setManualSeedColor(event: Event) {
 
 .appearance-reset-button {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 36px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 999px;
-  padding: 0 14px;
+  padding: 0 12px;
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface-container-low);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
 
@@ -613,13 +629,20 @@ function setManualSeedColor(event: Event) {
 
 @media (max-width: 640px) {
   .appearance-field-grid,
-  .appearance-range-grid,
-  .appearance-palette-grid {
+  .appearance-range-grid {
     grid-template-columns: 1fr;
   }
 
+  .appearance-color-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .appearance-palette-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .appearance-segmented__button {
-    min-height: 48px;
+    min-height: 42px;
     flex-direction: column;
     gap: 2px;
     font-size: 12px;

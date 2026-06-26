@@ -868,7 +868,7 @@ onMounted(() => {
 
     <div class="md-loading-box" :class="{ 'is-loading': loading }">
       <div v-if="loading" class="load-chart__loading">
-        <div class="md-spinner" />
+        <md-circular-progress class="md-native-loader" indeterminate aria-label="加载中" />
       </div>
 
       <div v-if="error" class="md-alert md-alert--error load-chart__message">
