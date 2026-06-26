@@ -1,0 +1,85 @@
+{
+  "name": "komari-theme-material",
+  "type": "module",
+  "version": "2.0.0",
+  "packageManager": "pnpm@10.24.0",
+  "description": "A Material Design 3 theme for Komari Monitor.",
+  "author": {
+    "name": "Liebesfreud",
+    "email": "liebesfreudzz@gmail.com",
+    "url": "https://github.com/Liebesfreud"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Liebesfreud/Komari-Material#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Liebesfreud/Komari-Material.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Liebesfreud/Komari-Material/issues"
+  },
+  "keywords": [
+    "komari",
+    "komari-theme",
+    "material-design",
+    "vue",
+    "vite"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build",
+    "lint": "run-s lint:oxlint lint:eslint",
+    "lint:oxlint": "oxlint . --fix",
+    "lint:eslint": "eslint . --fix --cache"
+  },
+  "dependencies": {
+    "@material/material-color-utilities": "catalog:",
+    "@material/web": "catalog:",
+    "dayjs": "catalog:",
+    "echarts": "catalog:",
+    "material-symbols": "catalog:",
+    "pinia": "catalog:",
+    "vue": "catalog:",
+    "vue-router": "catalog:"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "catalog:",
+    "@tsconfig/node24": "catalog:",
+    "@types/js-cookie": "catalog:",
+    "@types/node": "catalog:",
+    "@unocss/eslint-config": "catalog:",
+    "@unocss/eslint-plugin": "catalog:",
+    "@unocss/preset-web-fonts": "catalog:",
+    "@unocss/preset-wind4": "catalog:",
+    "@unocss/transformer-directives": "catalog:",
+    "@unocss/transformer-variant-group": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "@vue/eslint-config-typescript": "catalog:",
+    "@vue/tsconfig": "catalog:",
+    "@vueuse/core": "catalog:",
+    "archiver": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-format": "catalog:",
+    "eslint-plugin-oxlint": "catalog:",
+    "eslint-plugin-vue": "catalog:",
+    "jiti": "catalog:",
+    "js-cookie": "catalog:",
+    "npm-run-all2": "catalog:",
+    "oxlint": "catalog:",
+    "sass": "catalog:",
+    "sass-embedded": "catalog:",
+    "typescript": "catalog:",
+    "unocss": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-static-copy": "catalog:",
+    "vite-plugin-vue-devtools": "catalog:",
+    "vue-echarts": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}
