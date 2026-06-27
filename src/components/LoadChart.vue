@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { RecordFormat } from '@/utils/recordHelper'
-import type { StatusRecord } from '@/utils/rpc'
 import { useIntervalFn } from '@vueuse/core'
 import dayjs from 'dayjs'
 import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 import VChart from 'vue-echarts'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
+import { getSharedApi } from '@/utils/api'
 import { formatBytes, formatBytesSplit } from '@/utils/helper'
 import { fillMissingTimePoints } from '@/utils/recordHelper'
 import { getSharedRpc } from '@/utils/rpc'
@@ -104,6 +104,28 @@ const presetViews = [
   { label: '30 天', hours: 720 },
 ]
 
+interface LoadChartRecord {
+  client: string
+  time: string
+  cpu: number
+  gpu: number
+  ram: number
+  ram_total: number
+  swap: number
+  swap_total: number
+  load: number
+  temp: number
+  disk: number
+  disk_total: number
+  net_in: number
+  net_out: number
+  net_total_up: number
+  net_total_down: number
+  process: number
+  connections: number
+  connections_udp: number
+}
+
 // 可用视图列表
 const availableViews = computed(() => {
   const views: { label: string, hours?: number }[] = [{ label: '实时' }]
@@ -141,7 +163,7 @@ const selectedHours = computed(() => {
 const isRealtime = computed(() => selectedView.value === '实时')
 
 // 数据状态
-const remoteData = shallowRef<StatusRecord[]>([])
+const remoteData = shallowRef<LoadChartRecord[]>([])
 const loading = ref(false)
 const isInitialLoad = ref(true) // 是否为首次加载（用于控制实时模式下的加载状态）
 const error = ref<string | null>(null)
@@ -151,10 +173,11 @@ const nodeInfo = computed(() => nodesStore.nodesByUuid.get(props.uuid))
 
 // RPC 客户端
 const rpc = getSharedRpc()
+const api = getSharedApi()
 
 // ==================== 数据获取 ====================
 
-function statusToRecordFormat(records: StatusRecord[]): RecordFormat[] {
+function statusToRecordFormat(records: LoadChartRecord[]): RecordFormat[] {
   return records.map(r => ({
     client: r.client,
     time: r.time,
@@ -217,18 +240,11 @@ async function fetchHistoryData() {
   error.value = null
 
   try {
-    const apiBase = import.meta.env.VITE_API_BASE
-    const response = await fetch(`${apiBase}/records/load?uuid=${props.uuid}&hours=${hours}`)
-
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`)
-    }
-
-    const resp = await response.json()
-    const records = resp.data?.records || []
+    const response = await api.getLoadRecords(props.uuid, hours)
+    const records = response.records || []
 
     // 按时间排序
-    records.sort((a: StatusRecord, b: StatusRecord) =>
+    records.sort((a, b) =>
       dayjs(a.time).valueOf() - dayjs(b.time).valueOf(),
     )
 
