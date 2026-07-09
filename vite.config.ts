@@ -54,6 +54,51 @@ function createKomariProxy(proxyTarget: string): Record<string, ProxyOptions> {
   }
 }
 
+function injectMaterialSymbolsFontHints(distDir: string) {
+  const assetsDir = resolve(distDir, 'assets')
+  const indexHtmlPath = resolve(distDir, 'index.html')
+
+  if (!existsSync(assetsDir) || !existsSync(indexHtmlPath)) {
+    return
+  }
+
+  const assetFiles = fs.readdirSync(assetsDir) as string[]
+  const materialSymbolsFont = assetFiles.find(file => /^material-symbols-rounded-.+\.woff2$/.test(file))
+
+  if (!materialSymbolsFont) {
+    console.warn('[material-symbols-font] Material Symbols font asset not found, skipping preload injection')
+    return
+  }
+
+  for (const file of assetFiles) {
+    if (!file.endsWith('.css')) {
+      continue
+    }
+
+    const cssPath = resolve(assetsDir, file)
+    const css = fs.readFileSync(cssPath, 'utf-8') as string
+
+    if (!css.includes('Material Symbols Rounded')) {
+      continue
+    }
+
+    const patchedCss = css.replace(/font-display:\s*block/g, 'font-display:swap')
+    if (patchedCss !== css) {
+      fs.writeFileSync(cssPath, patchedCss)
+    }
+  }
+
+  const fontHref = `/assets/${materialSymbolsFont}`
+  const preloadLink = `<link rel="preload" href="${fontHref}" as="font" type="font/woff2" crossorigin>`
+  const indexHtml = fs.readFileSync(indexHtmlPath, 'utf-8') as string
+
+  if (indexHtml.includes(fontHref)) {
+    return
+  }
+
+  fs.writeFileSync(indexHtmlPath, indexHtml.replace('</head>', `    ${preloadLink}\n  </head>`))
+}
+
 /**
  * Vite 插件：构建后打包 Komari 主题 Zip
  *
@@ -85,6 +130,8 @@ function komariThemeZip(): Plugin {
       if (existsSync(outputPath)) {
         fs.rmSync(outputPath, { force: true })
       }
+
+      injectMaterialSymbolsFontHints(distDir)
 
       const output = fs.createWriteStream(outputPath)
       const archive = archiver('zip', { zlib: { level: 9 } })

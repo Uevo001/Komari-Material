@@ -4,7 +4,6 @@ import { computed, defineComponent, onMounted, onUnmounted, provide, ref, watch 
 import { useAppStore } from '@/stores/app'
 import { applyMaterialThemeTokens } from '@/utils/materialTheme'
 import '@material/web/all.js'
-import 'material-symbols/rounded.css'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 
