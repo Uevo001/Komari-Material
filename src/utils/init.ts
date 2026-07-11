@@ -73,22 +73,21 @@ class InitManager {
     }
 
     try {
-      // 1. 测试后端服务是否正常
+      // 1. 测试后端服务是否正常（私有站 401 需优先处理）
       await this.healthCheck()
 
-      // 2. 获取服务端公开属性
-      await this.fetchPublicSettings()
+      // 私有站强制登录时保留骨架，等待登录后重入
+      if (this.appStore.requireLogin) {
+        return
+      }
 
-      // 3. 获取用户信息
-      await this.fetchUserInfo()
+      // 2. 并行获取公开配置、用户信息与节点数据
+      await this.fetchBootstrapData()
 
-      // 4. 获取节点信息和最新状态
-      await this.fetchNodesData()
-
-      // 5. 解除加载状态
+      // 3. 解除加载状态
       this.appStore.loading = false
 
-      // 6. 建立 WebSocket 连接并开始轮询
+      // 4. 建立 WebSocket 连接并开始轮询
       this.startWebSocketAndPolling()
 
       this.isInitialized = true
@@ -131,9 +130,7 @@ class InitManager {
    * 用于私有站点，用户必须登录才能访问
    */
   private showForceLoginModal(): void {
-    // 解除加载状态
-    this.appStore.loading = false
-
+    // 保留 loading，壳层骨架继续展示在登录遮罩后方
     window.$modal.create({
       title: '登录',
       preset: 'dialog',
@@ -158,15 +155,14 @@ class InitManager {
   private async reinitAfterForceLogin(): Promise<void> {
     // 重置登录要求状态
     this.appStore.requireLogin = false
+    this.appStore.loading = true
 
     // 关闭登录 Modal
     window.$modal?.destroyAll()
 
     try {
-      // 重新执行初始化流程
-      await this.fetchPublicSettings()
-      await this.fetchUserInfo()
-      await this.fetchNodesData()
+      // 重新并行执行初始化数据拉取
+      await this.fetchBootstrapData()
 
       // 解除加载状态
       this.appStore.loading = false
@@ -179,6 +175,23 @@ class InitManager {
     catch (error) {
       console.error('[InitManager] Re-initialization after login failed:', error)
       this.appStore.connectionError = true
+      this.appStore.loading = false
+    }
+  }
+
+  /**
+   * 并行拉取首屏所需的配置、用户与节点数据
+   */
+  private async fetchBootstrapData(): Promise<void> {
+    const results = await Promise.allSettled([
+      this.fetchPublicSettings(),
+      this.fetchUserInfo(),
+      this.fetchNodesData(),
+    ])
+
+    const nodesResult = results[2]
+    if (nodesResult.status === 'rejected') {
+      throw nodesResult.reason
     }
   }
 

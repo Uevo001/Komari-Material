@@ -2,6 +2,7 @@
 import { useDebounceFn } from '@vueuse/core'
 import { computed, defineAsyncComponent, nextTick, onActivated, onDeactivated, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import HomeSkeleton from '@/components/HomeSkeleton.vue'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
@@ -138,113 +139,117 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
 <template>
   <div class="home-view">
-    <div v-if="appStore.connectionError" class="home-view__alert-wrap">
-      <div class="md-alert md-alert--error">
-        <span class="material-symbols-rounded">error</span>
-        <div>
-          <strong>RPC 服务错误</strong>
-          <div>连接服务器失败，请检查网络设置或刷新页面后再试。</div>
-        </div>
-      </div>
-    </div>
+    <HomeSkeleton v-if="appStore.loading" />
 
-    <div v-if="appStore.alertEnabled && appStore.alertContent" class="home-view__alert-wrap">
-      <div class="md-alert" :class="alertClass">
-        <span class="material-symbols-rounded">campaign</span>
-        <div>
-          <strong v-if="appStore.alertTitle">{{ appStore.alertTitle }}</strong>
-          <MarkdownRenderer :content="appStore.alertContent" />
-        </div>
-      </div>
-    </div>
-
-    <NodeGeneralCards />
-
-    <div class="home-view__divider md-wavy-divider" />
-
-    <section class="node-info">
-      <div class="node-toolbar">
-        <div v-if="showGroupTabs" class="md-tab-row node-toolbar__groups" aria-label="节点分组">
-          <button
-            v-for="group in groups"
-            :key="group.name"
-            class="md-tab-button"
-            :class="{ 'is-active': appStore.nodeSelectedGroup === group.name }"
-            type="button"
-            @click="appStore.nodeSelectedGroup = group.name"
-          >
-            {{ group.tab }}
-          </button>
-        </div>
-
-        <div class="node-toolbar__actions">
-          <label class="node-toolbar__search" aria-label="搜索节点">
-            <span class="material-symbols-rounded" aria-hidden="true">search</span>
-            <input
-              type="search"
-              placeholder="搜索节点名称、地区、系统"
-              :value="searchText"
-              @input="updateSearch"
-            >
-            <button
-              v-if="searchText"
-              class="node-toolbar__search-clear"
-              type="button"
-              aria-label="清空搜索"
-              title="清空搜索"
-              @click="clearSearch"
-            >
-              <span class="material-symbols-rounded" aria-hidden="true">close</span>
-            </button>
-          </label>
-
-          <div class="md-segmented-control node-toolbar__view-toggle" role="group" aria-label="节点视图">
-            <button
-              class="md-segmented-control__button"
-              :class="{ 'is-active': appStore.nodeViewMode === 'card' }"
-              type="button"
-              title="卡片视图"
-              @click="appStore.nodeViewMode = 'card'"
-            >
-              <span class="material-symbols-rounded">grid_view</span>
-            </button>
-            <button
-              class="md-segmented-control__button"
-              :class="{ 'is-active': appStore.nodeViewMode === 'list' }"
-              type="button"
-              title="列表视图"
-              @click="appStore.nodeViewMode = 'list'"
-            >
-              <span class="material-symbols-rounded">view_list</span>
-            </button>
-            <button
-              class="md-segmented-control__button"
-              :class="{ 'is-active': appStore.nodeViewMode === 'compact-list' }"
-              type="button"
-              title="双栏列表视图"
-              @click="appStore.nodeViewMode = 'compact-list'"
-            >
-              <span class="material-symbols-rounded">view_comfy</span>
-            </button>
+    <template v-else>
+      <div v-if="appStore.connectionError" class="home-view__alert-wrap">
+        <div class="md-alert md-alert--error">
+          <span class="material-symbols-rounded">error</span>
+          <div>
+            <strong>RPC 服务错误</strong>
+            <div>连接服务器失败，请检查网络设置或刷新页面后再试。</div>
           </div>
         </div>
       </div>
 
-      <div class="nodes">
-        <div v-if="nodeList.length !== 0 && appStore.nodeViewMode === 'card'" class="node-card-grid">
-          <NodeCard v-for="node in nodeList" :key="node.uuid" :node="node" @click="handleNodeClick(node)" />
-        </div>
-
-        <NodeList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'list'" :nodes="nodeList" @click="handleNodeClick" />
-
-        <NodeCompactList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'compact-list'" :nodes="nodeList" @click="handleNodeClick" />
-
-        <div v-else class="md-empty">
-          <span class="material-symbols-rounded">inbox</span>
-          <span>暂无节点</span>
+      <div v-if="appStore.alertEnabled && appStore.alertContent" class="home-view__alert-wrap">
+        <div class="md-alert" :class="alertClass">
+          <span class="material-symbols-rounded">campaign</span>
+          <div>
+            <strong v-if="appStore.alertTitle">{{ appStore.alertTitle }}</strong>
+            <MarkdownRenderer :content="appStore.alertContent" />
+          </div>
         </div>
       </div>
-    </section>
+
+      <NodeGeneralCards />
+
+      <div class="home-view__divider md-wavy-divider" />
+
+      <section class="node-info">
+        <div class="node-toolbar">
+          <div v-if="showGroupTabs" class="md-tab-row node-toolbar__groups" aria-label="节点分组">
+            <button
+              v-for="group in groups"
+              :key="group.name"
+              class="md-tab-button"
+              :class="{ 'is-active': appStore.nodeSelectedGroup === group.name }"
+              type="button"
+              @click="appStore.nodeSelectedGroup = group.name"
+            >
+              {{ group.tab }}
+            </button>
+          </div>
+
+          <div class="node-toolbar__actions">
+            <label class="node-toolbar__search" aria-label="搜索节点">
+              <span class="material-symbols-rounded" aria-hidden="true">search</span>
+              <input
+                type="search"
+                placeholder="搜索节点名称、地区、系统"
+                :value="searchText"
+                @input="updateSearch"
+              >
+              <button
+                v-if="searchText"
+                class="node-toolbar__search-clear"
+                type="button"
+                aria-label="清空搜索"
+                title="清空搜索"
+                @click="clearSearch"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">close</span>
+              </button>
+            </label>
+
+            <div class="md-segmented-control node-toolbar__view-toggle" role="group" aria-label="节点视图">
+              <button
+                class="md-segmented-control__button"
+                :class="{ 'is-active': appStore.nodeViewMode === 'card' }"
+                type="button"
+                title="卡片视图"
+                @click="appStore.nodeViewMode = 'card'"
+              >
+                <span class="material-symbols-rounded">grid_view</span>
+              </button>
+              <button
+                class="md-segmented-control__button"
+                :class="{ 'is-active': appStore.nodeViewMode === 'list' }"
+                type="button"
+                title="列表视图"
+                @click="appStore.nodeViewMode = 'list'"
+              >
+                <span class="material-symbols-rounded">view_list</span>
+              </button>
+              <button
+                class="md-segmented-control__button"
+                :class="{ 'is-active': appStore.nodeViewMode === 'compact-list' }"
+                type="button"
+                title="双栏列表视图"
+                @click="appStore.nodeViewMode = 'compact-list'"
+              >
+                <span class="material-symbols-rounded">view_comfy</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="nodes">
+          <div v-if="nodeList.length !== 0 && appStore.nodeViewMode === 'card'" class="node-card-grid">
+            <NodeCard v-for="node in nodeList" :key="node.uuid" :node="node" @click="handleNodeClick(node)" />
+          </div>
+
+          <NodeList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'list'" :nodes="nodeList" @click="handleNodeClick" />
+
+          <NodeCompactList v-else-if="nodeList.length !== 0 && appStore.nodeViewMode === 'compact-list'" :nodes="nodeList" @click="handleNodeClick" />
+
+          <div v-else class="md-empty">
+            <span class="material-symbols-rounded">inbox</span>
+            <span>暂无节点</span>
+          </div>
+        </div>
+      </section>
+    </template>
   </div>
 </template>
 

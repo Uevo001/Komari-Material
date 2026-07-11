@@ -70,7 +70,18 @@ const storageInfo = computed<InfoItem[]>(() => [
 
 <template>
   <div class="instance-detail">
-    <div v-if="!data" class="instance-detail__empty">
+    <div v-if="appStore.loading" class="instance-detail__empty" role="status" aria-live="polite" aria-busy="true">
+      <div class="instance-detail__skeleton md-card">
+        <div class="instance-detail__skeleton-line instance-detail__skeleton-line--title" />
+        <div class="instance-detail__skeleton-line" />
+        <div class="instance-detail__skeleton-grid">
+          <div v-for="index in 6" :key="index" class="instance-detail__skeleton-block" />
+        </div>
+        <div class="instance-detail__skeleton-chart" />
+      </div>
+    </div>
+
+    <div v-else-if="!data" class="instance-detail__empty">
       <div class="md-card md-empty">
         <span class="material-symbols-rounded">search_off</span>
         <span>节点不存在或已被删除</span>
@@ -310,5 +321,71 @@ const storageInfo = computed<InfoItem[]>(() => [
   min-width: 86px;
   padding: 0 20px;
   font-weight: 500;
+}
+
+.instance-detail__skeleton {
+  display: flex;
+  width: min(100%, 960px);
+  flex-direction: column;
+  gap: 16px;
+  padding: var(--md-app-card-padding);
+}
+
+.instance-detail__skeleton-line,
+.instance-detail__skeleton-block,
+.instance-detail__skeleton-chart {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: color-mix(
+    in srgb,
+    var(--md-sys-color-surface-container-highest) 88%,
+    var(--md-sys-color-outline-variant)
+  );
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--md-sys-color-surface) 55%, transparent) 50%,
+      transparent 100%
+    );
+    animation: instance-skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+}
+
+.instance-detail__skeleton-line {
+  width: 48%;
+  height: 14px;
+}
+
+.instance-detail__skeleton-line--title {
+  width: 36%;
+  height: 28px;
+}
+
+.instance-detail__skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.instance-detail__skeleton-block {
+  height: 72px;
+}
+
+.instance-detail__skeleton-chart {
+  height: 280px;
+  border-radius: 16px;
+}
+
+@keyframes instance-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 </style>
