@@ -214,7 +214,14 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             'vue-vendor': ['vue', 'vue-router', 'pinia'],
             'echarts': ['echarts', 'vue-echarts'],
-            'material-web': ['@material/web/all.js'],
+            'material-web': [
+              '@material/web/button/filled-button.js',
+              '@material/web/button/outlined-button.js',
+              '@material/web/button/text-button.js',
+              '@material/web/progress/circular-progress.js',
+              '@material/web/progress/linear-progress.js',
+              '@material/web/textfield/outlined-text-field.js',
+            ],
             'vueuse': ['@vueuse/core'],
           },
         },

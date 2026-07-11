@@ -3,7 +3,7 @@ import type { PropType, Ref, VNodeChild } from 'vue'
 import { computed, defineComponent, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { applyMaterialThemeTokens } from '@/utils/materialTheme'
-import '@material/web/all.js'
+import '@/utils/materialWeb'
 
 type ToastType = 'success' | 'error' | 'warning' | 'info'
 
