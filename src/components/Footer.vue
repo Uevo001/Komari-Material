@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { VersionInfo } from '@/utils/api'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { getSharedApi } from '@/utils/api'
 
@@ -9,13 +9,33 @@ const api = getSharedApi()
 const buildVersion = __BUILD_VERSION__
 const buildGitHash = __BUILD_GIT_HASH__
 const serverVersion = ref<VersionInfo | null>(null)
+let idleCallbackId: number | null = null
+let fallbackTimer: ReturnType<typeof window.setTimeout> | null = null
 
-onMounted(async () => {
+async function fetchServerVersion() {
   try {
     serverVersion.value = await api.getVersion()
   }
   catch {
     // 静默失败
+  }
+}
+
+onMounted(() => {
+  if (typeof window.requestIdleCallback === 'function') {
+    idleCallbackId = window.requestIdleCallback(() => void fetchServerVersion(), { timeout: 2000 })
+  }
+  else {
+    fallbackTimer = window.setTimeout(() => void fetchServerVersion(), 1000)
+  }
+})
+
+onUnmounted(() => {
+  if (idleCallbackId !== null && typeof window.cancelIdleCallback === 'function') {
+    window.cancelIdleCallback(idleCallbackId)
+  }
+  if (fallbackTimer !== null) {
+    window.clearTimeout(fallbackTimer)
   }
 })
 

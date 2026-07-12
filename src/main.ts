@@ -3,7 +3,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 
-import 'material-symbols/rounded.css'
+import '@material-symbols/font-400/rounded.css'
 import './styles/main.scss'
 import 'virtual:uno.css'
 

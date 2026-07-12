@@ -5,7 +5,6 @@
 
 import type { Client, KomariRpc, NodeStatus } from '@/utils/rpc'
 import { h } from 'vue'
-import LoginDialog from '@/components/LoginDialog.vue'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import { getSharedApi } from '@/utils/api'
@@ -73,16 +72,25 @@ class InitManager {
     }
 
     try {
-      // 1. 测试后端服务是否正常（私有站 401 需优先处理）
-      await this.healthCheck()
+      // 健康检查与首屏数据并行，避免公开站点额外等待一次网络往返。
+      // allSettled 同时避免私有站点的数据请求在 401 时产生未处理的拒绝。
+      const [healthResult, bootstrapResult] = await Promise.allSettled([
+        this.healthCheck(),
+        this.fetchBootstrapData(),
+      ])
+
+      if (healthResult.status === 'rejected') {
+        throw healthResult.reason
+      }
 
       // 私有站强制登录时保留骨架，等待登录后重入
       if (this.appStore.requireLogin) {
         return
       }
 
-      // 2. 并行获取公开配置、用户信息与节点数据
-      await this.fetchBootstrapData()
+      if (bootstrapResult.status === 'rejected') {
+        throw bootstrapResult.reason
+      }
 
       // 3. 解除加载状态
       this.appStore.loading = false
@@ -116,7 +124,7 @@ class InitManager {
       if (error instanceof RpcError && error.code === 401) {
         console.warn('[InitManager] Private site detected, requiring login')
         this.appStore.requireLogin = true
-        this.showForceLoginModal()
+        await this.showForceLoginModal()
         return
       }
       console.error('[InitManager] Health check failed:', error)
@@ -129,7 +137,9 @@ class InitManager {
    * 显示强制登录 Modal
    * 用于私有站点，用户必须登录才能访问
    */
-  private showForceLoginModal(): void {
+  private async showForceLoginModal(): Promise<void> {
+    const { default: LoginDialog } = await import('@/components/LoginDialog.vue')
+
     // 保留 loading，壳层骨架继续展示在登录遮罩后方
     window.$modal.create({
       title: '登录',

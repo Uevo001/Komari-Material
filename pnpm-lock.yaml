@@ -81,9 +81,6 @@ catalogs:
     js-cookie:
       specifier: ^3.0.5
       version: 3.0.5
-    material-symbols:
-      specifier: ^0.45.2
-      version: 0.45.2
     npm-run-all2:
       specifier: ^8.0.4
       version: 8.0.4
@@ -133,6 +130,9 @@ importers:
 
   .:
     dependencies:
+      '@material-symbols/font-400':
+        specifier: ^0.45.7
+        version: 0.45.7
       '@material/material-color-utilities':
         specifier: 'catalog:'
         version: 0.4.0
@@ -145,9 +145,6 @@ importers:
       echarts:
         specifier: 'catalog:'
         version: 6.0.0
-      material-symbols:
-        specifier: 'catalog:'
-        version: 0.45.2
       pinia:
         specifier: 'catalog:'
         version: 3.0.4(typescript@5.9.3)(vue@3.5.28(typescript@5.9.3))
@@ -775,6 +772,9 @@ packages:
 
   '@lit/reactive-element@2.1.2':
     resolution: {integrity: sha512-pbCDiVMnne1lYUIaYNN5wrwQXDtHaYtg7YEFPeW+hws6U47WeFvISGUWekPGKWOP1ygrs0ef0o1VJMk1exos5A==}
+
+  '@material-symbols/font-400@0.45.7':
+    resolution: {integrity: sha512-CbVicbIrjGoZaFu/RhEcg7UmzNSvpqaImsLj/1Wj2/ka74tNucYjigsS7U/5aL3cBDqFgXjcUo1y+w9be/a/5A==}
 
   '@material/material-color-utilities@0.4.0':
     resolution: {integrity: sha512-dlq6VExJReb8dhjj3a/yTigr3ncNwoFmL5Iy2ENtbDX03EmNeOEdZ+vsaGrj7RTuO+mB7L58II4LCsl4NpM8uw==}
@@ -2448,9 +2448,6 @@ packages:
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
 
-  material-symbols@0.45.2:
-    resolution: {integrity: sha512-TxcmySpXFc+03tgyl0Z6J1Yvn5/eY9b9vnizJu5Xg3RrrL5jFLp3KlZKq5k2ttKj3SqH/omofH7BwZMO/zk1mw==}
-
   mdast-util-find-and-replace@3.0.2:
     resolution: {integrity: sha512-Tmd1Vg/m3Xz43afeNxDIhWRtFZgM2VLyaf4vSTYwudTyeuTneoL3qtWMA5jeLyz/O1vDJmmV4QuScFCA2tBPwg==}
 
@@ -3968,6 +3965,8 @@ snapshots:
   '@lit/reactive-element@2.1.2':
     dependencies:
       '@lit-labs/ssr-dom-shim': 1.6.0
+
+  '@material-symbols/font-400@0.45.7': {}
 
   '@material/material-color-utilities@0.4.0': {}
 
@@ -5650,8 +5649,6 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.5.5
 
   markdown-table@3.0.4: {}
-
-  material-symbols@0.45.2: {}
 
   mdast-util-find-and-replace@3.0.2:
     dependencies:

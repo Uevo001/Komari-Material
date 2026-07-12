@@ -7,7 +7,7 @@
 It mainly contains two catalogs:
 
 - `flags/`, 258 country and region flag assets
-- `logo/`, 33 OS and vendor logo assets
+- `logo/`, 32 OS and vendor logo assets
 
 ## Runtime contract
 

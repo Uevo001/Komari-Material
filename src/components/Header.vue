@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, h, inject, ref } from 'vue'
+import { computed, defineAsyncComponent, h, inject, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import AppearancePanel from './AppearancePanel.vue'
-import LoginDialog from './LoginDialog.vue'
+
+const AppearancePanel = defineAsyncComponent(() => import('./AppearancePanel.vue'))
+const LoginDialog = defineAsyncComponent(() => import('./LoginDialog.vue'))
 
 const router = useRouter()
 const appStore = useAppStore()
