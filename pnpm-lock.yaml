@@ -131,7 +131,7 @@ importers:
   .:
     dependencies:
       '@material-symbols/font-400':
-        specifier: ^0.45.7
+        specifier: 'catalog:'
         version: 0.45.7
       '@material/material-color-utilities':
         specifier: 'catalog:'
