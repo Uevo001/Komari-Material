@@ -1,13 +1,13 @@
 # AGENTS.md
 
-Repo guide for `komari-theme-naive`.
+Repo guide for `komari-theme-material`.
 
 ## Snapshot
 
-- Generated: Fri Apr 03 2026, Asia/Shanghai
-- Branch: `master`
-- Commit: `30e2df1`
-- App: Vue 3 + Vite + Naive UI theme for Komari Monitor
+- Generated: Tue Jul 14 2026, Asia/Shanghai
+- Branch: `main`
+- Commit: `8fb1a60c`
+- App: Vue 3 + Vite + Material Web theme for Komari Monitor
 - Package manager: `pnpm`
 - Theme manifest: `komari-theme.json`
 
@@ -55,7 +55,7 @@ Notes:
 Expected output:
 
 - `dist/`
-- `komari-theme-naive-build-<sha>.zip`
+- `komari-theme-material-build-<sha>.zip`
 
 Zip contents:
 
@@ -104,7 +104,7 @@ Contributor density, useful for triage:
 - Preserve the `@` alias to `src` defined in `vite.config.ts`
 - Treat `komari-theme.json` as release input, not optional metadata
 - Treat `docs/preview.png` as release input, not just documentation art
-- Respect existing generated outputs and naming patterns, especially `komari-theme-naive-build-<sha>.zip`
+- Respect existing generated outputs and naming patterns, especially `komari-theme-material-build-<sha>.zip`
 - Root verification is lint plus build, not tests
 
 ## Repo grounded anti-patterns
@@ -114,14 +114,13 @@ Contributor density, useful for triage:
 - Do not rename files under `public/images/flags/` or `public/images/logo/` without checking code references in `src`
 - Do not change asset path conventions like `/images/flags/<code>.svg` or `/images/logo/...` blindly
 - Do not add generic framework advice here that belongs in `src/AGENTS.md`
-- Do not duplicate workflow specifics from `.github/AGENTS.md` or asset naming specifics from `public/images/AGENTS.md`
+- Do not duplicate workflow specifics or asset naming details from `public/images/AGENTS.md`
 
 ## Child guides
 
 For local rules, defer to the nearest child guide:
 
 - `src/AGENTS.md` for app code, component, store, router, and utility changes
-- `.github/AGENTS.md` for workflow and issue template changes
 - `public/images/AGENTS.md` for runtime image asset naming and compatibility rules
 
 If a child guide exists, it overrides this root file for its subtree.

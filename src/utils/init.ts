@@ -322,17 +322,17 @@ class InitManager {
       return
     }
 
-    ws.onclose = () => {
+    ws.addEventListener('close', () => {
       // 如果当前是已连接状态且还在使用 WebSocket 模式，触发重连
       if (this.useWebSocket === true && this.nodesStore.wsConnectionState === 'connected') {
         this.nodesStore.updateWsState('disconnected')
         this.scheduleReconnect()
       }
-    }
+    })
 
-    ws.onerror = () => {
+    ws.addEventListener('error', () => {
       console.error('[InitManager] WebSocket error')
-    }
+    })
   }
 
   /**

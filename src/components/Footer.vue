@@ -64,7 +64,7 @@ const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.
 
         <div class="material-footer__line">
           <span>Theme by</span>
-          <a href="https://github.com/lyimoexiao/komari-theme-material" target="_blank" rel="noopener noreferrer">Komari Material</a>
+          <a href="https://github.com/Liebesfreud/Komari-Material" target="_blank" rel="noopener noreferrer">Komari Material</a>
           <span class="material-footer__version">v{{ buildVersion }} ({{ buildGitHash }})</span>
         </div>
       </div>

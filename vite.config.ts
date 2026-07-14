@@ -131,6 +131,12 @@ function komariThemeZip(): Plugin {
         fs.rmSync(outputPath, { force: true })
       }
 
+      // public/ is copied verbatim by Vite; keep repository-only guidance out of releases.
+      const publicImagesGuidePath = resolve(distDir, 'images/AGENTS.md')
+      if (existsSync(publicImagesGuidePath)) {
+        fs.rmSync(publicImagesGuidePath, { force: true })
+      }
+
       injectMaterialSymbolsFontHints(distDir)
 
       const output = fs.createWriteStream(outputPath)

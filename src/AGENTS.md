@@ -1,6 +1,6 @@
 # Source Tree Guide
 
-This document applies to `/src` only. Keep changes aligned with the current Vue 3, Vite, Pinia, and Naive UI structure already used here.
+This document applies to `/src` only. Keep changes aligned with the current Vue 3, Vite, Pinia, and Material Web structure already used here.
 
 ## Core architecture
 
@@ -49,9 +49,9 @@ This document applies to `/src` only. Keep changes aligned with the current Vue 
 - If a component needs remote data, prefer consuming shared store state or shared RPC helpers already exposed by `@/utils/*`.
 - Avoid embedding ad hoc parsing of theme settings inside components when the value can be normalized once in a store.
 
-## Naive UI globals
+## Material UI globals
 
-- Naive UI provider setup lives in `@/components/Provider.vue`.
+- Material Web provider setup lives in `@/components/Provider.vue`.
 - Global provider APIs are exposed on `window.$message`, `window.$dialog`, `window.$notification`, `window.$loadingBar`, and `window.$modal`.
 - These globals are typed in `src/types/global.d.ts`. Keep that file in sync if provider globals change.
 
