@@ -160,7 +160,11 @@ function openPingChart() {
       { 'md-surface-glass': hasBackgroundBlur },
       cardBlurClass,
     ]"
+    role="button"
+    tabindex="0"
     @click="emit('click')"
+    @keydown.enter.self="emit('click')"
+    @keydown.space.self.prevent="emit('click')"
   >
     <header class="node-card__header">
       <div class="node-card__identity">
@@ -339,8 +343,8 @@ function openPingChart() {
 }
 
 .node-card__chart-button {
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
 }
 
 .node-card__os-logo {

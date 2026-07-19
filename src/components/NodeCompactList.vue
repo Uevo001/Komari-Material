@@ -421,8 +421,8 @@ function diskPercent(node: NodeData) {
 }
 
 .node-compact-card__chart-button {
-  width: 30px;
-  height: 30px;
+  width: 48px;
+  height: 48px;
 }
 
 .node-compact-card__os-logo {

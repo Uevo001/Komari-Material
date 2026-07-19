@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PropType, Ref, VNodeChild } from 'vue'
-import { computed, defineComponent, onMounted, onUnmounted, provide, ref, watch } from 'vue'
+import { computed, defineComponent, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { applyMaterialThemeTokens } from '@/utils/materialTheme'
 import '@/utils/materialWeb'
@@ -27,7 +27,9 @@ const isDark = computed(() => appStore.isDark)
 const isScrolled = ref(false)
 const toasts = ref<ToastItem[]>([])
 const activeModal = ref<ModalState | null>(null)
+const modalCard = ref<HTMLElement | null>(null)
 const loadingBarVisible = ref(false)
+let modalTrigger: HTMLElement | null = null
 let toastId = 0
 let modalId = 0
 
@@ -64,19 +66,47 @@ function notificationText(options: { title?: string, content?: string }) {
   return [options.title, options.content].filter(Boolean).join('：')
 }
 
-function closeModal() {
+async function closeModal() {
   activeModal.value = null
+  await nextTick()
+  modalTrigger?.focus()
+  modalTrigger = null
 }
 
 function handleScrimClick() {
   if (activeModal.value?.maskClosable) {
-    closeModal()
+    void closeModal()
   }
 }
 
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && activeModal.value?.closeOnEsc) {
-    closeModal()
+    void closeModal()
+    return
+  }
+
+  if (event.key !== 'Tab' || !activeModal.value || !modalCard.value)
+    return
+
+  const focusable = Array.from(modalCard.value.querySelectorAll<HTMLElement>(
+    'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href], [tabindex]:not([tabindex="-1"])',
+  )).filter(element => !element.hasAttribute('hidden'))
+
+  if (focusable.length === 0) {
+    event.preventDefault()
+    modalCard.value.focus()
+    return
+  }
+
+  const first = focusable[0]!
+  const last = focusable[focusable.length - 1]!
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  }
+  else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
   }
 }
 
@@ -98,6 +128,7 @@ function setupMaterialTools() {
 
   window.$modal = {
     create: (options) => {
+      modalTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
       activeModal.value = {
         id: ++modalId,
         title: options.title,
@@ -106,6 +137,10 @@ function setupMaterialTools() {
         closeOnEsc: options.closeOnEsc ?? true,
         maskClosable: options.maskClosable ?? true,
       }
+      void nextTick(() => {
+        const preferredTarget = modalCard.value?.querySelector<HTMLElement>('[autofocus], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [href]')
+        ;(preferredTarget ?? modalCard.value)?.focus()
+      })
     },
     destroyAll: closeModal,
   }
@@ -210,9 +245,17 @@ onUnmounted(() => {
 
     <Transition name="modal">
       <div v-if="activeModal" class="material-modal-scrim" @click.self="handleScrimClick">
-        <section class="material-modal-card" role="dialog" aria-modal="true">
+        <section
+          ref="modalCard"
+          class="material-modal-card"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="activeModal.title ? `material-modal-title-${activeModal.id}` : undefined"
+          :aria-label="activeModal.title ? undefined : '对话框'"
+          tabindex="-1"
+        >
           <header v-if="activeModal.title || activeModal.closable" class="material-modal-card__header">
-            <h2 v-if="activeModal.title" class="material-modal-card__title">
+            <h2 v-if="activeModal.title" :id="`material-modal-title-${activeModal.id}`" class="material-modal-card__title">
               {{ activeModal.title }}
             </h2>
             <button v-if="activeModal.closable" class="material-icon-button material-modal-card__close" type="button" aria-label="关闭" @click="closeModal">
@@ -339,9 +382,9 @@ onUnmounted(() => {
 
 .material-modal-card__title {
   margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.25;
+  font-size: var(--md-sys-typescale-headline-small-size);
+  font-weight: var(--md-sys-typescale-headline-small-weight);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
 }
 
 .material-modal-card__close {
@@ -398,7 +441,7 @@ onUnmounted(() => {
 
   .material-modal-card {
     max-height: 88vh;
-    border-radius: 28px 28px 16px 16px;
+    border-radius: 28px 28px 0 0;
   }
 }
 </style>

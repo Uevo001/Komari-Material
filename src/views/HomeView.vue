@@ -168,12 +168,14 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
       <section class="node-info">
         <div class="node-toolbar">
-          <div v-if="showGroupTabs" class="md-tab-row node-toolbar__groups" aria-label="节点分组">
+          <div v-if="showGroupTabs" class="md-tab-row node-toolbar__groups" role="radiogroup" aria-label="节点分组">
             <button
               v-for="group in groups"
               :key="group.name"
               class="md-tab-button"
               :class="{ 'is-active': appStore.nodeSelectedGroup === group.name }"
+              role="radio"
+              :aria-checked="appStore.nodeSelectedGroup === group.name"
               type="button"
               @click="appStore.nodeSelectedGroup = group.name"
             >
@@ -202,10 +204,13 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
               </button>
             </label>
 
-            <div class="md-segmented-control node-toolbar__view-toggle" role="group" aria-label="节点视图">
+            <div class="md-segmented-control node-toolbar__view-toggle" role="radiogroup" aria-label="节点视图">
               <button
                 class="md-segmented-control__button"
                 :class="{ 'is-active': appStore.nodeViewMode === 'card' }"
+                role="radio"
+                :aria-checked="appStore.nodeViewMode === 'card'"
+                aria-label="卡片视图"
                 type="button"
                 title="卡片视图"
                 @click="appStore.nodeViewMode = 'card'"
@@ -215,6 +220,9 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
               <button
                 class="md-segmented-control__button"
                 :class="{ 'is-active': appStore.nodeViewMode === 'list' }"
+                role="radio"
+                :aria-checked="appStore.nodeViewMode === 'list'"
+                aria-label="列表视图"
                 type="button"
                 title="列表视图"
                 @click="appStore.nodeViewMode = 'list'"
@@ -224,6 +232,9 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
               <button
                 class="md-segmented-control__button"
                 :class="{ 'is-active': appStore.nodeViewMode === 'compact-list' }"
+                role="radio"
+                :aria-checked="appStore.nodeViewMode === 'compact-list'"
+                aria-label="双栏列表视图"
                 type="button"
                 title="双栏列表视图"
                 @click="appStore.nodeViewMode = 'compact-list'"
@@ -270,7 +281,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 }
 
 .node-toolbar {
-  --node-toolbar-control-height: 40px;
+  --node-toolbar-control-height: 48px;
 
   display: flex;
   flex-wrap: nowrap;
@@ -348,8 +359,8 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
 .node-toolbar__search-clear {
   display: inline-flex;
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -408,22 +419,21 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
 @media (max-width: 640px) {
   .node-toolbar {
+    flex-wrap: wrap;
     gap: 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
-    }
+    overflow: visible;
   }
 
   .node-toolbar__actions {
+    width: 100%;
+    min-width: 0;
     gap: 8px;
   }
 
   .node-toolbar__search {
-    min-width: 180px;
-    max-width: 220px;
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 auto;
     height: var(--node-toolbar-control-height);
     padding-left: 14px;
   }
@@ -433,12 +443,13 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
   }
 
   .node-toolbar__search-clear {
-    width: 30px;
-    height: 30px;
+    width: 48px;
+    height: 48px;
   }
 
   .node-toolbar__groups {
     flex: 0 0 auto;
+    width: 100%;
     max-width: none;
   }
 }

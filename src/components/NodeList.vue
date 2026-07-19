@@ -467,8 +467,8 @@ function diskPercent(node: NodeData) {
 }
 
 .node-list-card__chart-button {
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
   grid-row: 1;
   grid-column: 2;
 }

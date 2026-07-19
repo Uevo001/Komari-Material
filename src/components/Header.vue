@@ -188,4 +188,18 @@ function handleButtonClick(action: string) {
   align-items: center;
   gap: 4px;
 }
+
+@media (max-width: 640px) {
+  .material-top-app-bar__inner {
+    gap: 8px;
+  }
+
+  .material-brand {
+    gap: 8px;
+  }
+
+  .material-top-app-bar__actions {
+    gap: 0;
+  }
+}
 </style>

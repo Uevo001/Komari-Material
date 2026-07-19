@@ -163,12 +163,14 @@ function setManualSeedColor(event: Event) {
         </div>
       </div>
 
-      <div class="appearance-segmented" aria-label="主题模式">
+      <div class="appearance-segmented" role="radiogroup" aria-label="主题模式">
         <button
           v-for="option in themeModeOptions"
           :key="option.value"
           class="appearance-segmented__button"
           :class="{ 'is-active': appStore.themeMode === option.value }"
+          role="radio"
+          :aria-checked="appStore.themeMode === option.value"
           type="button"
           @click="setThemeMode(option.value)"
         >
@@ -187,12 +189,14 @@ function setManualSeedColor(event: Event) {
         </div>
       </div>
 
-      <div class="appearance-segmented appearance-segmented--three" aria-label="莫奈取色模式">
+      <div class="appearance-segmented appearance-segmented--three" role="radiogroup" aria-label="莫奈取色模式">
         <button
           v-for="option in monetModeOptions"
           :key="option.value"
           class="appearance-segmented__button"
           :class="{ 'is-active': appStore.monetColorMode === option.value }"
+          role="radio"
+          :aria-checked="appStore.monetColorMode === option.value"
           type="button"
           @click="setMonetMode(option.value)"
         >
@@ -210,12 +214,14 @@ function setManualSeedColor(event: Event) {
           </span>
         </label>
 
-        <div class="appearance-palette-grid" aria-label="莫奈调色盘">
+        <div class="appearance-palette-grid" role="radiogroup" aria-label="莫奈调色盘">
           <button
             v-for="palette in paletteOptions"
             :key="palette.key"
             class="appearance-palette"
             :class="{ 'is-active': selectedPalette === palette.key }"
+            role="radio"
+            :aria-checked="selectedPalette === palette.key"
             type="button"
             :title="palette.seedColor"
             @click="setPalette(palette.key)"
@@ -243,12 +249,14 @@ function setManualSeedColor(event: Event) {
         </div>
       </div>
 
-      <div class="appearance-segmented" aria-label="界面密度">
+      <div class="appearance-segmented" role="radiogroup" aria-label="界面密度">
         <button
           v-for="option in densityOptions"
           :key="option.value"
           class="appearance-segmented__button"
           :class="{ 'is-active': densityModel === option.value }"
+          role="radio"
+          :aria-checked="densityModel === option.value"
           type="button"
           @click="densityModel = option.value"
         >
@@ -363,16 +371,16 @@ function setManualSeedColor(event: Event) {
   h3 {
     margin: 0;
     color: var(--md-sys-color-on-surface);
-    font-size: 15px;
-    font-weight: 500;
-    line-height: 1.25;
+    font-size: var(--md-sys-typescale-title-medium-size);
+    font-weight: var(--md-sys-typescale-title-medium-weight);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
   }
 
   p {
     margin: 2px 0 0;
     color: var(--md-sys-color-on-surface-variant);
-    font-size: 11px;
-    line-height: 1.45;
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
   }
 }
 
@@ -388,7 +396,7 @@ function setManualSeedColor(event: Event) {
 .appearance-segmented__button {
   position: relative;
   display: inline-flex;
-  min-height: 36px;
+  min-height: 48px;
   overflow: hidden;
   align-items: center;
   justify-content: center;
@@ -458,7 +466,7 @@ function setManualSeedColor(event: Event) {
 .appearance-field input,
 .appearance-field select {
   width: 100%;
-  min-height: 34px;
+  min-height: 48px;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 4px;
   padding: 0 10px;
@@ -491,7 +499,7 @@ function setManualSeedColor(event: Event) {
 }
 
 .appearance-switch {
-  min-height: 34px;
+  min-height: 48px;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
 
@@ -551,7 +559,7 @@ function setManualSeedColor(event: Event) {
 
 .appearance-palette {
   display: grid;
-  min-height: 38px;
+  min-height: 48px;
   grid-template-columns: 32px minmax(0, 1fr);
   grid-template-areas: 'swatch label';
   align-items: center;
@@ -608,7 +616,7 @@ function setManualSeedColor(event: Event) {
 
 .appearance-reset-button {
   display: inline-flex;
-  min-height: 36px;
+  min-height: 48px;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -642,7 +650,7 @@ function setManualSeedColor(event: Event) {
   }
 
   .appearance-segmented__button {
-    min-height: 42px;
+    min-height: 48px;
     flex-direction: column;
     gap: 2px;
     font-size: 12px;

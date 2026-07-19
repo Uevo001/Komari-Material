@@ -70,8 +70,8 @@ img {
 .material-icon-button {
   position: relative;
   display: inline-flex;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   overflow: hidden;
   align-items: center;
   justify-content: center;
@@ -174,30 +174,31 @@ img {
 .md-title-large {
   margin: 0;
   color: var(--md-sys-color-on-surface);
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1.25;
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+  line-height: var(--md-sys-typescale-title-large-line-height);
 }
 
 .md-title-medium {
   margin: 0;
   color: var(--md-sys-color-on-surface);
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 1.35;
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
 }
 
 .md-label {
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.35;
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
 }
 
 .md-body-small {
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--md-sys-typescale-body-small-size);
+  font-weight: var(--md-sys-typescale-body-small-weight);
+  line-height: var(--md-sys-typescale-body-small-line-height);
 }
 
 .md-number {
@@ -317,8 +318,8 @@ img {
 .md-segmented-control__button {
   position: relative;
   display: inline-flex;
-  width: 44px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   overflow: hidden;
   align-items: center;
   justify-content: center;
@@ -365,7 +366,7 @@ img {
 .md-tab-button {
   position: relative;
   display: inline-flex;
-  min-height: 36px;
+  min-height: 48px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -415,7 +416,7 @@ img {
 .md-control-button {
   position: relative;
   display: inline-flex;
-  min-height: 34px;
+  min-height: 48px;
   overflow: hidden;
   align-items: center;
   justify-content: center;
