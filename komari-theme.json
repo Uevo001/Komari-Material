@@ -2,10 +2,10 @@
   "name": "Komari Material",
   "short": "Material",
   "description": "A Material Design 3 theme for Komari Monitor",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "author": "Liebesfreud",
   "url": "https://github.com/Liebesfreud/Komari-Material",
-  "preview": "preview.png",
+  "preview": "preview.png?v=edc0c4e",
   "configuration": {
     "type": "managed",
     "name": "Material 设置",
