@@ -183,6 +183,16 @@ watch(
 )
 
 watch(
+  () => appStore.cardOpacity,
+  (opacity) => {
+    const root = document.documentElement
+    root.style.setProperty('--md-app-card-surface-opacity', `${opacity}%`)
+    root.style.setProperty('--md-app-card-surface-hover-opacity', `${Math.min(100, opacity + 6)}%`)
+  },
+  { immediate: true },
+)
+
+watch(
   isDark,
   (dark) => {
     const root = document.documentElement
@@ -327,8 +337,11 @@ onUnmounted(() => {
   color: var(--md-sys-color-inverse-on-surface);
   background: var(--md-sys-color-inverse-surface);
   box-shadow: var(--md-app-elevation-2);
-  font-size: 14px;
-  line-height: 1.45;
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
   pointer-events: auto;
 }
 
@@ -382,9 +395,11 @@ onUnmounted(() => {
 
 .material-modal-card__title {
   margin: 0;
+  font-family: var(--md-sys-typescale-headline-small-font);
   font-size: var(--md-sys-typescale-headline-small-size);
   font-weight: var(--md-sys-typescale-headline-small-weight);
   line-height: var(--md-sys-typescale-headline-small-line-height);
+  letter-spacing: var(--md-sys-typescale-headline-small-tracking);
 }
 
 .material-modal-card__close {

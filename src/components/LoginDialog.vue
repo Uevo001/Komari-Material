@@ -233,14 +233,20 @@ function handleOAuth2Login() {
 
   h3 {
     margin: 0 0 6px;
-    font-size: 18px;
-    font-weight: 500;
+    font-family: var(--md-sys-typescale-title-medium-font);
+    font-size: var(--md-sys-typescale-title-medium-size);
+    font-weight: var(--md-sys-typescale-title-medium-weight);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-title-medium-tracking);
   }
 
   p {
     margin: 0;
     color: var(--md-sys-color-on-surface-variant);
-    font-size: 13px;
+    font-family: var(--md-sys-typescale-body-medium-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-body-medium-tracking);
   }
 }
 
@@ -259,8 +265,10 @@ function handleOAuth2Login() {
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface);
   font-family: var(--md-app-number-font-family);
-  font-size: 20px;
-  font-weight: 500;
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+  letter-spacing: var(--md-sys-typescale-title-large-tracking);
   text-align: center;
 
   &:focus {

@@ -260,7 +260,7 @@ function openPingChart() {
             <span class="md-number">{{ showTrafficProgress ? `${trafficUsedPercentage.toFixed(1)}%` : '∞' }}</span>
           </div>
           <TrafficProgress
-            :height="6"
+            :height="4"
             :upload="props.node.net_total_up ?? 0"
             :download="props.node.net_total_down ?? 0"
             :traffic-limit="props.node.traffic_limit"
@@ -328,9 +328,11 @@ function openPingChart() {
   overflow: hidden;
   margin: 0;
   color: var(--md-sys-color-on-surface);
-  font-size: 17px;
-  font-weight: 500;
-  line-height: 1.25;
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: 800;
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -379,7 +381,10 @@ function openPingChart() {
   justify-content: flex-end;
   gap: 6px;
   color: var(--md-sys-color-on-surface);
-  font-size: 13px;
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
 }
 
 .node-card__resource-grid {
@@ -400,13 +405,23 @@ function openPingChart() {
 }
 
 .node-card__resource-head {
-  font-size: 13px;
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+
+  > .md-number {
+    font-weight: 800;
+  }
 }
 
 .node-card__hint {
   overflow: hidden;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 11px;
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -442,12 +457,19 @@ function openPingChart() {
   gap: 7px;
   align-items: center;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
   text-align: center;
 
   strong {
     color: var(--md-sys-color-error);
-    font-size: 14px;
+    font-family: var(--md-sys-typescale-title-small-font);
+    font-size: var(--md-sys-typescale-title-small-size);
+    font-weight: var(--md-sys-typescale-title-small-weight);
+    line-height: var(--md-sys-typescale-title-small-line-height);
+    letter-spacing: var(--md-sys-typescale-title-small-tracking);
   }
 }
 

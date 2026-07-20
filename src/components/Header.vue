@@ -166,9 +166,11 @@ function handleButtonClick(action: string) {
 
 .material-brand__text {
   overflow: hidden;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: 800;
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -176,9 +178,11 @@ function handleButtonClick(action: string) {
 .material-brand__subtitle {
   overflow: hidden;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.1;
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: var(--md-sys-typescale-label-small-weight);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

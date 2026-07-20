@@ -174,8 +174,8 @@ const railColor = computed(() => 'var(--md-sys-color-surface-container-highest)'
     position: relative;
     display: flex;
     overflow: hidden;
-    height: 6px;
-    border-radius: 999px;
+    height: 4px;
+    border-radius: var(--md-sys-shape-corner-none);
     background: var(--md-sys-color-surface-container-highest);
     transition: background-color 250ms cubic-bezier(0.4, 0, 0.6, 1);
   }
@@ -189,8 +189,8 @@ const railColor = computed(() => 'var(--md-sys-color-surface-container-highest)'
       background-color 250ms cubic-bezier(0.4, 0, 0.6, 1);
 
     &--last {
-      border-top-right-radius: 999px;
-      border-bottom-right-radius: 999px;
+      border-top-right-radius: var(--md-sys-shape-corner-none);
+      border-bottom-right-radius: var(--md-sys-shape-corner-none);
     }
   }
 
@@ -198,7 +198,10 @@ const railColor = computed(() => 'var(--md-sys-color-surface-container-highest)'
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 12px;
+    font-family: var(--md-sys-typescale-body-small-font);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+    letter-spacing: var(--md-sys-typescale-body-small-tracking);
     color: var(--md-sys-color-on-surface-variant);
 
     &-detail {

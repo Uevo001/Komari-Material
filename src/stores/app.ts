@@ -19,12 +19,15 @@ type NodeViewMode = 'card' | 'list' | 'compact-list'
 type RpcTransportMode = 'websocket' | 'http'
 type AlertType = 'default' | 'info' | 'success' | 'warning' | 'error'
 type BackgroundType = 'image' | 'video'
+type CardSurfaceStyle = 'solid' | 'translucent'
 
 interface AppearanceSettingsOverrides {
   monetColorMode?: MonetColorMode
   monetPalette?: string
   materialSeedColor?: string
   materialDensity?: MaterialDensity
+  cardSurfaceStyle?: CardSurfaceStyle
+  cardOpacity?: number
   fullWidth?: boolean
   maxPageWidth?: string
   hiddenGroupsFromAll?: string
@@ -35,6 +38,10 @@ interface AppearanceSettingsOverrides {
   backgroundBlur?: number
   backgroundOverlay?: number
 }
+
+const DEFAULT_FONT_FAMILY = '"Roboto Variable", "Noto Sans SC Variable", sans-serif'
+const DEFAULT_NUMBER_FONT_FAMILY = '"Roboto Variable", "Noto Sans SC Variable", sans-serif'
+const LEGACY_FONT_NAMES = ['MiSans', 'TCloud Number']
 
 /** 默认的字节精度配置 */
 const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
@@ -57,6 +64,15 @@ function parseHiddenGroupsFromAll(value: unknown): string[] {
     .filter(Boolean)
 
   return Array.from(new Set(groups))
+}
+
+function normalizeFontFamily(value: unknown, fallback: string): string {
+  if (typeof value !== 'string' || !value.trim())
+    return fallback
+
+  return LEGACY_FONT_NAMES.some(fontName => value.includes(fontName))
+    ? fallback
+    : value.trim()
 }
 
 const useAppStore = defineStore('app', () => {
@@ -204,6 +220,23 @@ const useAppStore = defineStore('app', () => {
     return 'compact'
   })
 
+  const cardSurfaceStyle = computed<CardSurfaceStyle>(() => {
+    const style = themeSettings.value.cardSurfaceStyle
+    return style === 'translucent' ? style : 'solid'
+  })
+
+  const cardOpacity = computed<number>(() => {
+    const value = themeSettings.value.cardOpacity
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Math.min(95, Math.max(50, value))
+    }
+    return 78
+  })
+
+  const fontFamily = computed<string>(() => {
+    return normalizeFontFamily(themeSettings.value.fontFamily, DEFAULT_FONT_FAMILY)
+  })
+
   // 计算属性：卡片进度条布局配置
   const cardProgressLayout = computed<'1col' | '2col'>(() => {
     const settings = themeSettings.value
@@ -218,11 +251,7 @@ const useAppStore = defineStore('app', () => {
 
   // 计算属性：数字字体配置
   const numberFontFamily = computed<string>(() => {
-    const settings = themeSettings.value
-    if (settings && typeof settings.numberFontFamily === 'string' && settings.numberFontFamily.trim()) {
-      return settings.numberFontFamily.trim()
-    }
-    return '"TCloud Number VF", "MiSans VF", sans-serif'
+    return normalizeFontFamily(themeSettings.value.numberFontFamily, DEFAULT_NUMBER_FONT_FAMILY)
   })
 
   // 计算属性：单分组时是否隐藏 Tab
@@ -484,11 +513,10 @@ const useAppStore = defineStore('app', () => {
     return 0
   })
 
-  // 计算属性：卡片模糊半径（当启用自定义背景时，使用更高的模糊半径）
+  // 半透明卡片使用独立的背景模糊，确保壁纸清晰度为 0 时仍有足够的文字可读性。
   const cardBlurRadius = computed<number>(() => {
-    if (backgroundEnabled.value && backgroundBlur.value > 0) {
-      // 卡片使用背景模糊半径 + 8px 的额外模糊
-      return backgroundBlur.value + 8
+    if (backgroundEnabled.value && cardSurfaceStyle.value === 'translucent') {
+      return Math.max(12, backgroundBlur.value + 8)
     }
     return 0
   })
@@ -513,7 +541,15 @@ const useAppStore = defineStore('app', () => {
   })
 
   const materialThemeTokens = computed(() => {
-    return buildMaterialThemeTokens(materialSeedColor.value, isDark.value, materialDensity.value)
+    return buildMaterialThemeTokens(
+      materialSeedColor.value,
+      isDark.value,
+      materialDensity.value,
+      {
+        fontFamily: fontFamily.value,
+        numberFontFamily: numberFontFamily.value,
+      },
+    )
   })
 
   // 计算属性：当前主题模式下的背景 URL
@@ -645,6 +681,9 @@ const useAppStore = defineStore('app', () => {
     wallpaperSeedSourceUrl,
     wallpaperSeedError,
     materialDensity,
+    cardSurfaceStyle,
+    cardOpacity,
+    fontFamily,
     materialThemeTokens,
     cardProgressLayout,
     numberFontFamily,

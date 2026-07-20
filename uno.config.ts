@@ -16,12 +16,6 @@ export default defineConfig({
     },
   },
   rules: [
-    [
-      'font-tcloud-number',
-      {
-        'font-family': '"TCloud Number VF", system-ui, sans-serif',
-      },
-    ],
     // 毛玻璃效果 - 动态模糊半径
     [
       /^glass-(\d+)$/,
@@ -54,18 +48,4 @@ export default defineConfig({
     'glass-card-sm': 'glass-8 glass-bg dark:glass-bg-dark',
     'glass-card-lg': 'glass-16 glass-bg dark:glass-bg-dark',
   },
-  preflights: [
-    {
-      layer: 'base',
-      getCSS: () => `
-@font-face {
-  font-family: 'TCloud Number VF';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/TCloudNumberVF.ttf') format('truetype');
-}
-      `,
-    },
-  ],
 })

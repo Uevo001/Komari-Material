@@ -262,7 +262,7 @@ function diskPercent(node: NodeData) {
               :download="node.net_total_down ?? 0"
               :traffic-limit="node.traffic_limit"
               :traffic-limit-type="(node.traffic_limit_type || 'sum')"
-              height="6px"
+              height="4px"
             />
             <span class="node-list-card__hint md-number">
               {{ formatBytes(getTrafficUsed(node)) }} /
@@ -353,8 +353,11 @@ function diskPercent(node: NodeData) {
   padding: 0 9px;
   color: var(--md-sys-color-on-error-container);
   background: var(--md-sys-color-error-container);
-  font-size: 11px;
-  font-weight: 500;
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: var(--md-sys-typescale-label-small-weight);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
 }
 
 .node-list-card__status-badge--online {
@@ -382,9 +385,11 @@ function diskPercent(node: NodeData) {
   overflow: hidden;
   margin: 0;
   color: var(--md-sys-color-on-surface);
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 1.25;
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: 800;
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -395,8 +400,10 @@ function diskPercent(node: NodeData) {
   flex-wrap: wrap;
   gap: 6px 10px;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
-  line-height: 1.35;
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
 }
 
 .node-list-card__os-logo {
@@ -427,14 +434,23 @@ function diskPercent(node: NodeData) {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 12px;
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+
+  > .md-number {
+    font-weight: 800;
+  }
 }
 
 .node-list-card__hint {
   overflow: hidden;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 11px;
-  line-height: 1.2;
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -462,8 +478,7 @@ function diskPercent(node: NodeData) {
 }
 
 .node-list-card__tags .md-chip {
-  min-height: 28px;
-  padding: 4px 10px;
+  min-height: 32px;
 }
 
 .node-list-card__chart-button {

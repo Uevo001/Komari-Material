@@ -121,7 +121,7 @@ code {
   padding: 1px 6px;
   color: var(--md-sys-color-on-secondary-container);
   background: var(--md-sys-color-secondary-container);
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--md-app-number-font-family);
   font-size: 0.92em;
 }
 </style>

@@ -170,29 +170,43 @@ const cardBlurClass = computed(() => {
 .general-card__value {
   min-width: 0;
   color: var(--md-sys-color-on-surface);
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1.1;
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: 800;
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
   word-break: break-word;
 
   span {
     color: var(--md-sys-color-on-surface-variant);
-    font-size: 13px;
-    font-weight: 600;
+    font-family: var(--md-sys-typescale-label-medium-font);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-label-medium-tracking);
   }
 
   @media (min-width: 640px) {
-    font-size: 26px;
+    font-family: var(--md-sys-typescale-headline-small-font);
+    font-size: var(--md-sys-typescale-headline-small-size);
+    font-weight: 800;
+    line-height: var(--md-sys-typescale-headline-small-line-height);
+    letter-spacing: var(--md-sys-typescale-headline-small-tracking);
   }
 }
 
 .general-card__label {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 6px;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
-  font-weight: 500;
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+  white-space: nowrap;
 }
 
 .general-card__metric-stack {
@@ -219,17 +233,28 @@ const cardBlurClass = computed(() => {
 
   strong {
     color: var(--md-sys-color-on-surface);
-    font-size: 16px;
-    line-height: 1;
+    font-family: var(--md-sys-typescale-title-medium-font);
+    font-size: var(--md-sys-typescale-title-medium-size);
+    font-weight: 800;
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-title-medium-tracking);
 
     @media (min-width: 640px) {
-      font-size: 22px;
+      font-family: var(--md-sys-typescale-title-large-font);
+      font-size: var(--md-sys-typescale-title-large-size);
+      font-weight: 800;
+      line-height: var(--md-sys-typescale-title-large-line-height);
+      letter-spacing: var(--md-sys-typescale-title-large-tracking);
     }
   }
 
   small {
     color: var(--md-sys-color-on-surface-variant);
-    font-size: 10px;
+    font-family: var(--md-sys-typescale-label-small-font);
+    font-size: var(--md-sys-typescale-label-small-size);
+    font-weight: var(--md-sys-typescale-label-small-weight);
+    line-height: var(--md-sys-typescale-label-small-line-height);
+    letter-spacing: var(--md-sys-typescale-label-small-tracking);
     white-space: nowrap;
   }
 }

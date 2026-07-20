@@ -188,7 +188,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
               <span class="material-symbols-rounded" aria-hidden="true">search</span>
               <input
                 type="search"
-                placeholder="搜索节点名称、地区、系统"
+                placeholder="搜索节点"
                 :value="searchText"
                 @input="updateSearch"
               >
@@ -281,7 +281,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 }
 
 .node-toolbar {
-  --node-toolbar-control-height: 48px;
+  --node-toolbar-control-height: 40px;
 
   display: flex;
   flex-wrap: nowrap;
@@ -343,8 +343,11 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
     color: var(--md-sys-color-on-surface);
     background: transparent;
     font: inherit;
-    font-size: 14px;
-    line-height: 1.4;
+    font-family: var(--md-sys-typescale-body-large-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    font-weight: var(--md-sys-typescale-body-large-weight);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    letter-spacing: var(--md-sys-typescale-body-large-tracking);
 
     &::placeholder {
       color: var(--md-sys-color-on-surface-variant);
@@ -359,8 +362,8 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
 .node-toolbar__search-clear {
   display: inline-flex;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -384,13 +387,13 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 }
 
 .node-toolbar__view-toggle {
-  height: var(--node-toolbar-control-height);
+  height: 40px;
 }
 
 .node-toolbar__groups {
   flex: 1 1 auto;
   min-width: 0;
-  height: var(--node-toolbar-control-height);
+  height: 48px;
   align-items: center;
   gap: 8px;
   overflow-x: auto;
@@ -402,7 +405,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
   }
 
   .md-tab-button {
-    min-height: var(--node-toolbar-control-height);
+    min-height: 48px;
     padding: 0 14px;
   }
 }
@@ -439,12 +442,12 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
   }
 
   .node-toolbar__search input {
-    font-size: 13px;
+    font-size: var(--md-sys-typescale-body-large-size);
   }
 
   .node-toolbar__search-clear {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
   }
 
   .node-toolbar__groups {

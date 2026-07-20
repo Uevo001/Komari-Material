@@ -109,12 +109,17 @@ const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.
   flex-wrap: wrap;
   gap: 5px;
   align-items: center;
-  font-size: 13px;
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
 }
 
 .material-footer__version {
   font-family: var(--md-app-number-font-family);
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-label-small-size);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
   opacity: 0.72;
 }
 
@@ -123,12 +128,15 @@ const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  font-size: 12px;
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
 }
 
 .material-footer a {
   color: var(--md-sys-color-primary);
-  font-weight: 600;
+  font-weight: var(--md-sys-typescale-label-large-weight);
   text-decoration: none;
 
   &:hover {

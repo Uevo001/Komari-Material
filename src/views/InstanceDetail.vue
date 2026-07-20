@@ -225,9 +225,11 @@ const storageInfo = computed<InfoItem[]>(() => [
     overflow: hidden;
     margin: 0;
     color: var(--md-sys-color-on-surface);
-    font-size: 22px;
-    font-weight: 500;
-    line-height: 1.2;
+    font-family: var(--md-sys-typescale-title-large-font);
+    font-size: var(--md-sys-typescale-title-large-size);
+    font-weight: 800;
+    line-height: var(--md-sys-typescale-title-large-line-height);
+    letter-spacing: var(--md-sys-typescale-title-large-tracking);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -285,8 +287,11 @@ const storageInfo = computed<InfoItem[]>(() => [
     grid-column: 2;
     overflow-wrap: anywhere;
     color: var(--md-sys-color-on-surface);
-    font-size: 13px;
-    font-weight: 500;
+    font-family: var(--md-sys-typescale-title-small-font);
+    font-size: var(--md-sys-typescale-title-small-size);
+    font-weight: 800;
+    line-height: var(--md-sys-typescale-title-small-line-height);
+    letter-spacing: var(--md-sys-typescale-title-small-tracking);
   }
 }
 

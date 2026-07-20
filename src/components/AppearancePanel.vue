@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import type { MaterialDensity, MonetColorMode, MonetPaletteName } from '@/utils/materialTheme'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { buildMaterialThemeTokens, MONET_PALETTES, normalizeHexColor } from '@/utils/materialTheme'
 
 type ThemeMode = 'auto' | 'light' | 'dark'
 type BackgroundType = 'image' | 'video'
+type CardSurfaceStyle = 'solid' | 'translucent'
+type AppearanceTab = 'theme' | 'interface' | 'wallpaper'
 
 const appStore = useAppStore()
+const activeTab = ref<AppearanceTab>('theme')
+
+const appearanceTabs: Array<{ value: AppearanceTab, label: string, icon: string }> = [
+  { value: 'theme', label: '主题', icon: 'palette' },
+  { value: 'interface', label: '界面', icon: 'dashboard_customize' },
+  { value: 'wallpaper', label: '壁纸', icon: 'wallpaper' },
+]
 
 const themeModeOptions: Array<{ value: ThemeMode, label: string, icon: string }> = [
   { value: 'auto', label: '跟随系统', icon: 'contrast' },
@@ -24,6 +33,11 @@ const monetModeOptions: Array<{ value: MonetColorMode, label: string, icon: stri
 const densityOptions: Array<{ value: MaterialDensity, label: string, icon: string }> = [
   { value: 'compact', label: '紧凑', icon: 'density_small' },
   { value: 'comfortable', label: '舒展', icon: 'density_medium' },
+]
+
+const cardSurfaceOptions: Array<{ value: CardSurfaceStyle, label: string, icon: string }> = [
+  { value: 'solid', label: '实色', icon: 'rectangle' },
+  { value: 'translucent', label: '半透明', icon: 'blur_on' },
 ]
 
 const paletteLabels: Record<MonetPaletteName, string> = {
@@ -46,7 +60,15 @@ const selectedPalette = computed<MonetPaletteName>(() => {
 
 const paletteOptions = computed(() => {
   return Object.entries(MONET_PALETTES).map(([key, palette]) => {
-    const tokens = buildMaterialThemeTokens(palette.seedColor, appStore.isDark, appStore.materialDensity)
+    const tokens = buildMaterialThemeTokens(
+      palette.seedColor,
+      appStore.isDark,
+      appStore.materialDensity,
+      {
+        fontFamily: appStore.fontFamily,
+        numberFontFamily: appStore.numberFontFamily,
+      },
+    )
     return {
       key: key as MonetPaletteName,
       label: paletteLabels[key as MonetPaletteName],
@@ -63,6 +85,16 @@ const paletteOptions = computed(() => {
 const densityModel = computed<MaterialDensity>({
   get: () => appStore.materialDensity,
   set: value => appStore.updateAppearanceSetting('materialDensity', value),
+})
+
+const cardSurfaceModel = computed<CardSurfaceStyle>({
+  get: () => appStore.cardSurfaceStyle,
+  set: value => appStore.updateAppearanceSetting('cardSurfaceStyle', value),
+})
+
+const cardOpacityModel = computed<number>({
+  get: () => appStore.cardOpacity,
+  set: value => appStore.updateAppearanceSetting('cardOpacity', clampNumber(value, 50, 95)),
 })
 
 const fullWidthModel = computed<boolean>({
@@ -150,184 +182,305 @@ function setManualSeedColor(event: Event) {
   const value = (event.target as HTMLInputElement).value
   appStore.updateAppearanceSetting('materialSeedColor', normalizeHexColor(value, appStore.manualMaterialSeedColor))
 }
+
+function setActiveTab(tab: AppearanceTab) {
+  activeTab.value = tab
+}
+
+function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+    return
+
+  event.preventDefault()
+  let nextIndex = currentIndex
+  if (event.key === 'Home')
+    nextIndex = 0
+  else if (event.key === 'End')
+    nextIndex = appearanceTabs.length - 1
+  else
+    nextIndex = (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + appearanceTabs.length) % appearanceTabs.length
+
+  const nextTab = appearanceTabs[nextIndex]!
+  activeTab.value = nextTab.value
+  requestAnimationFrame(() => {
+    document.getElementById(`appearance-tab-${nextTab.value}`)?.focus()
+  })
+}
 </script>
 
 <template>
   <div class="appearance-panel">
-    <section class="appearance-section">
-      <div class="appearance-section__header">
-        <span class="material-symbols-rounded">routine</span>
-        <div>
-          <h3>主题</h3>
-          <p>当前生效色 {{ appStore.materialSeedColor }}</p>
-        </div>
+    <nav class="appearance-tabs" role="tablist" aria-label="外观设置分类">
+      <button
+        v-for="(tab, index) in appearanceTabs"
+        :id="`appearance-tab-${tab.value}`"
+        :key="tab.value"
+        class="appearance-tab"
+        :class="{ 'is-active': activeTab === tab.value }"
+        role="tab"
+        type="button"
+        :aria-selected="activeTab === tab.value"
+        :aria-controls="`appearance-panel-${tab.value}`"
+        :tabindex="activeTab === tab.value ? 0 : -1"
+        @click="setActiveTab(tab.value)"
+        @keydown="handleTabKeydown($event, index)"
+      >
+        <span class="material-symbols-rounded">{{ tab.icon }}</span>
+        <span>{{ tab.label }}</span>
+      </button>
+    </nav>
+
+    <div class="appearance-tab-content">
+      <div
+        v-if="activeTab === 'theme'"
+        id="appearance-panel-theme"
+        class="appearance-tab-panel"
+        role="tabpanel"
+        aria-labelledby="appearance-tab-theme"
+      >
+        <section class="appearance-group">
+          <div class="appearance-group__header">
+            <h3>主题模式</h3>
+            <p>当前生效色 {{ appStore.materialSeedColor }}</p>
+          </div>
+          <div class="appearance-segmented" role="radiogroup" aria-label="主题模式">
+            <button
+              v-for="option in themeModeOptions"
+              :key="option.value"
+              class="appearance-segmented__button"
+              :class="{ 'is-active': appStore.themeMode === option.value }"
+              role="radio"
+              :aria-checked="appStore.themeMode === option.value"
+              type="button"
+              @click="setThemeMode(option.value)"
+            >
+              <span class="material-symbols-rounded">{{ option.icon }}</span>
+              <span>{{ option.label }}</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="appearance-group">
+          <div class="appearance-group__header">
+            <h3>莫奈取色</h3>
+            <p>{{ wallpaperStatus }}</p>
+          </div>
+          <div class="appearance-segmented" role="radiogroup" aria-label="莫奈取色模式">
+            <button
+              v-for="option in monetModeOptions"
+              :key="option.value"
+              class="appearance-segmented__button"
+              :class="{ 'is-active': appStore.monetColorMode === option.value }"
+              role="radio"
+              :aria-checked="appStore.monetColorMode === option.value"
+              type="button"
+              @click="setMonetMode(option.value)"
+            >
+              <span class="material-symbols-rounded">{{ option.icon }}</span>
+              <span>{{ option.label }}</span>
+            </button>
+          </div>
+
+          <div class="appearance-color-layout">
+            <label class="appearance-field appearance-field--color">
+              <span>手动种子色</span>
+              <span class="appearance-color-input">
+                <input type="color" :value="appStore.manualMaterialSeedColor" aria-label="选择手动种子色" @input="setManualSeedColor">
+                <input type="text" :value="appStore.manualMaterialSeedColor" spellcheck="false" @change="setManualSeedColor">
+              </span>
+            </label>
+
+            <div class="appearance-palette-grid" role="radiogroup" aria-label="莫奈调色盘">
+              <button
+                v-for="palette in paletteOptions"
+                :key="palette.key"
+                class="appearance-palette"
+                :class="{ 'is-active': selectedPalette === palette.key }"
+                role="radio"
+                :aria-checked="selectedPalette === palette.key"
+                type="button"
+                :title="palette.seedColor"
+                @click="setPalette(palette.key)"
+              >
+                <span class="appearance-palette__swatches">
+                  <span
+                    v-for="color in palette.swatches"
+                    :key="color"
+                    class="appearance-palette__swatch"
+                    :style="{ backgroundColor: color }"
+                  />
+                </span>
+                <span class="appearance-palette__label">{{ palette.label }}</span>
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <div class="appearance-segmented" role="radiogroup" aria-label="主题模式">
-        <button
-          v-for="option in themeModeOptions"
-          :key="option.value"
-          class="appearance-segmented__button"
-          :class="{ 'is-active': appStore.themeMode === option.value }"
-          role="radio"
-          :aria-checked="appStore.themeMode === option.value"
-          type="button"
-          @click="setThemeMode(option.value)"
-        >
-          <span class="material-symbols-rounded">{{ option.icon }}</span>
-          <span>{{ option.label }}</span>
-        </button>
-      </div>
-    </section>
+      <div
+        v-else-if="activeTab === 'interface'"
+        id="appearance-panel-interface"
+        class="appearance-tab-panel"
+        role="tabpanel"
+        aria-labelledby="appearance-tab-interface"
+      >
+        <section class="appearance-group">
+          <div class="appearance-group__header">
+            <h3>界面密度</h3>
+            <p>调整监控信息的紧凑程度</p>
+          </div>
+          <div class="appearance-segmented" role="radiogroup" aria-label="界面密度">
+            <button
+              v-for="option in densityOptions"
+              :key="option.value"
+              class="appearance-segmented__button"
+              :class="{ 'is-active': densityModel === option.value }"
+              role="radio"
+              :aria-checked="densityModel === option.value"
+              type="button"
+              @click="densityModel = option.value"
+            >
+              <span class="material-symbols-rounded">{{ option.icon }}</span>
+              <span>{{ option.label }}</span>
+            </button>
+          </div>
+        </section>
 
-    <section class="appearance-section">
-      <div class="appearance-section__header">
-        <span class="material-symbols-rounded">palette</span>
-        <div>
-          <h3>莫奈取色</h3>
-          <p>{{ wallpaperStatus }}</p>
-        </div>
-      </div>
+        <section class="appearance-group">
+          <div class="appearance-group__header">
+            <h3>卡片材质</h3>
+            <p>半透明材质会保留 MD3 色调表面与轮廓</p>
+          </div>
+          <div class="appearance-segmented" role="radiogroup" aria-label="卡片材质">
+            <button
+              v-for="option in cardSurfaceOptions"
+              :key="option.value"
+              class="appearance-segmented__button"
+              :class="{ 'is-active': cardSurfaceModel === option.value }"
+              role="radio"
+              :aria-checked="cardSurfaceModel === option.value"
+              type="button"
+              @click="cardSurfaceModel = option.value"
+            >
+              <span class="material-symbols-rounded">{{ option.icon }}</span>
+              <span>{{ option.label }}</span>
+            </button>
+          </div>
 
-      <div class="appearance-segmented appearance-segmented--three" role="radiogroup" aria-label="莫奈取色模式">
-        <button
-          v-for="option in monetModeOptions"
-          :key="option.value"
-          class="appearance-segmented__button"
-          :class="{ 'is-active': appStore.monetColorMode === option.value }"
-          role="radio"
-          :aria-checked="appStore.monetColorMode === option.value"
-          type="button"
-          @click="setMonetMode(option.value)"
-        >
-          <span class="material-symbols-rounded">{{ option.icon }}</span>
-          <span>{{ option.label }}</span>
-        </button>
-      </div>
-
-      <div class="appearance-color-layout">
-        <label class="appearance-field appearance-field--color">
-          <span>手动种子色</span>
-          <span class="appearance-color-input">
-            <input type="color" :value="appStore.manualMaterialSeedColor" @input="setManualSeedColor">
-            <input type="text" :value="appStore.manualMaterialSeedColor" spellcheck="false" @change="setManualSeedColor">
-          </span>
-        </label>
-
-        <div class="appearance-palette-grid" role="radiogroup" aria-label="莫奈调色盘">
-          <button
-            v-for="palette in paletteOptions"
-            :key="palette.key"
-            class="appearance-palette"
-            :class="{ 'is-active': selectedPalette === palette.key }"
-            role="radio"
-            :aria-checked="selectedPalette === palette.key"
-            type="button"
-            :title="palette.seedColor"
-            @click="setPalette(palette.key)"
-          >
-            <span class="appearance-palette__swatches">
-              <span
-                v-for="color in palette.swatches"
-                :key="color"
-                class="appearance-palette__swatch"
-                :style="{ backgroundColor: color }"
-              />
+          <label class="appearance-range appearance-range--prominent" :class="{ 'is-disabled': cardSurfaceModel !== 'translucent' }">
+            <span class="appearance-range__header">
+              <strong>卡片不透明度</strong>
+              <output>{{ cardOpacityModel }}%</output>
             </span>
-            <span class="appearance-palette__label">{{ palette.label }}</span>
-          </button>
-        </div>
-      </div>
-    </section>
+            <span class="appearance-range__supporting">数值越低，壁纸越清晰</span>
+            <input
+              v-model.number="cardOpacityModel"
+              type="range"
+              min="50"
+              max="95"
+              step="1"
+              :disabled="cardSurfaceModel !== 'translucent'"
+            >
+          </label>
+        </section>
 
-    <section class="appearance-section">
-      <div class="appearance-section__header">
-        <span class="material-symbols-rounded">dashboard_customize</span>
-        <div>
-          <h3>界面</h3>
-          <p>密度、宽度和信息留白</p>
-        </div>
-      </div>
-
-      <div class="appearance-segmented" role="radiogroup" aria-label="界面密度">
-        <button
-          v-for="option in densityOptions"
-          :key="option.value"
-          class="appearance-segmented__button"
-          :class="{ 'is-active': densityModel === option.value }"
-          role="radio"
-          :aria-checked="densityModel === option.value"
-          type="button"
-          @click="densityModel = option.value"
-        >
-          <span class="material-symbols-rounded">{{ option.icon }}</span>
-          <span>{{ option.label }}</span>
-        </button>
-      </div>
-
-      <div class="appearance-field-grid">
-        <label class="appearance-switch">
-          <input v-model="fullWidthModel" type="checkbox">
-          <span>占满屏幕宽度</span>
-        </label>
-        <label class="appearance-field">
-          <span>最大页面宽度</span>
-          <input v-model="maxPageWidthModel" type="text" spellcheck="false" placeholder="1800px">
-        </label>
-        <label class="appearance-field appearance-field--wide">
-          <span>全部节点隐藏分组</span>
-          <input v-model="hiddenGroupsFromAllModel" type="text" spellcheck="false" placeholder="private, staging">
-        </label>
-      </div>
-    </section>
-
-    <section class="appearance-section">
-      <div class="appearance-section__header">
-        <span class="material-symbols-rounded">wallpaper</span>
-        <div>
-          <h3>壁纸</h3>
-          <p>{{ appStore.isDark ? '当前使用暗色模式背景' : '当前使用亮色模式背景' }}</p>
-        </div>
+        <section class="appearance-group">
+          <div class="appearance-group__header">
+            <h3>页面布局</h3>
+            <p>控制页面内容宽度与分组显示</p>
+          </div>
+          <div class="appearance-field-grid">
+            <label class="appearance-switch appearance-switch--wide">
+              <input v-model="fullWidthModel" type="checkbox">
+              <span>
+                <strong>占满屏幕宽度</strong>
+                <small>让页面内容使用全部可用宽度</small>
+              </span>
+            </label>
+            <label class="appearance-field">
+              <span>最大页面宽度</span>
+              <input v-model="maxPageWidthModel" type="text" spellcheck="false" placeholder="1800px">
+            </label>
+            <label class="appearance-field">
+              <span>全部节点隐藏分组</span>
+              <input v-model="hiddenGroupsFromAllModel" type="text" spellcheck="false" placeholder="private, staging">
+            </label>
+          </div>
+        </section>
       </div>
 
-      <div class="appearance-field-grid">
-        <label class="appearance-switch">
-          <input v-model="backgroundEnabledModel" type="checkbox">
-          <span>启用自定义背景</span>
-        </label>
-        <label class="appearance-field">
-          <span>背景类型</span>
-          <select v-model="backgroundTypeModel">
-            <option value="image">
-              image
-            </option>
-            <option value="video">
-              video
-            </option>
-          </select>
-        </label>
-      </div>
+      <div
+        v-else
+        id="appearance-panel-wallpaper"
+        class="appearance-tab-panel"
+        role="tabpanel"
+        aria-labelledby="appearance-tab-wallpaper"
+      >
+        <section class="appearance-group">
+          <div class="appearance-group__header">
+            <h3>自定义壁纸</h3>
+            <p>{{ appStore.isDark ? '当前使用暗色模式背景' : '当前使用亮色模式背景' }}</p>
+          </div>
+          <div class="appearance-field-grid">
+            <label class="appearance-switch">
+              <input v-model="backgroundEnabledModel" type="checkbox">
+              <span>启用自定义背景</span>
+            </label>
+            <label class="appearance-field">
+              <span>背景类型</span>
+              <select v-model="backgroundTypeModel">
+                <option value="image">
+                  图片
+                </option>
+                <option value="video">
+                  视频
+                </option>
+              </select>
+            </label>
+          </div>
+        </section>
 
-      <label class="appearance-field">
-        <span>亮色背景地址</span>
-        <input v-model="lightBackgroundUrlModel" type="url" spellcheck="false" placeholder="https://...">
-      </label>
-      <label class="appearance-field">
-        <span>暗色背景地址</span>
-        <input v-model="darkBackgroundUrlModel" type="url" spellcheck="false" placeholder="https://...">
-      </label>
+        <section class="appearance-group">
+          <div class="appearance-group__header">
+            <h3>背景地址</h3>
+            <p>可以为亮色与暗色模式使用不同资源</p>
+          </div>
+          <div class="appearance-field-grid">
+            <label class="appearance-field">
+              <span>亮色背景地址</span>
+              <input v-model="lightBackgroundUrlModel" type="url" spellcheck="false" placeholder="https://...">
+            </label>
+            <label class="appearance-field">
+              <span>暗色背景地址</span>
+              <input v-model="darkBackgroundUrlModel" type="url" spellcheck="false" placeholder="https://...">
+            </label>
+          </div>
+        </section>
 
-      <div class="appearance-range-grid">
-        <label class="appearance-range">
-          <span>模糊 {{ backgroundBlurModel }}px</span>
-          <input v-model.number="backgroundBlurModel" type="range" min="0" max="40" step="1">
-        </label>
-        <label class="appearance-range">
-          <span>遮罩 {{ backgroundOverlayModel }}%</span>
-          <input v-model.number="backgroundOverlayModel" type="range" min="0" max="100" step="1">
-        </label>
+        <section class="appearance-group">
+          <div class="appearance-group__header">
+            <h3>背景效果</h3>
+            <p>调整壁纸本身的柔化和表面遮罩</p>
+          </div>
+          <div class="appearance-range-grid">
+            <label class="appearance-range appearance-range--prominent">
+              <span class="appearance-range__header">
+                <strong>背景模糊</strong>
+                <output>{{ backgroundBlurModel }}px</output>
+              </span>
+              <input v-model.number="backgroundBlurModel" type="range" min="0" max="40" step="1">
+            </label>
+            <label class="appearance-range appearance-range--prominent">
+              <span class="appearance-range__header">
+                <strong>背景遮罩</strong>
+                <output>{{ backgroundOverlayModel }}%</output>
+              </span>
+              <input v-model.number="backgroundOverlayModel" type="range" min="0" max="100" step="1">
+            </label>
+          </div>
+        </section>
       </div>
-    </section>
+    </div>
 
     <footer class="appearance-panel__footer">
       <button class="appearance-reset-button" type="button" :disabled="!appStore.hasAppearanceOverrides" @click="appStore.resetAppearanceSettings()">
@@ -341,46 +494,125 @@ function setManualSeedColor(event: Event) {
 <style scoped lang="scss">
 .appearance-panel {
   display: grid;
-  gap: 12px;
+  min-height: min(560px, calc(88vh - 104px));
+  grid-template-rows: auto 1fr auto;
+  gap: 0;
 }
 
-.appearance-section {
+.appearance-tabs {
+  position: sticky;
+  top: -8px;
+  z-index: 4;
   display: grid;
-  gap: 10px;
-  padding-bottom: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: 0 8px 12px var(--md-sys-color-surface-container-high);
+}
+
+.appearance-tab {
+  position: relative;
+  display: inline-flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  background: transparent;
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  cursor: pointer;
+  transition:
+    color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: var(--md-sys-color-primary);
+    opacity: 0;
+    transform: scaleX(0.45);
+    transition:
+      opacity var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+      transform var(--md-app-motion-duration-short) var(--md-app-motion-easing-emphasized);
+  }
+
+  &:hover {
+    color: var(--md-sys-color-on-surface);
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+  }
+
+  &.is-active {
+    color: var(--md-sys-color-primary);
+    background: var(--md-sys-color-secondary-container);
+  }
+
+  &.is-active::after {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  .material-symbols-rounded {
+    font-size: 20px;
+  }
+}
+
+.appearance-tab-content {
+  min-height: 0;
+  padding: 20px 2px 16px;
+}
+
+.appearance-tab-panel {
+  display: grid;
+  gap: 0;
+  animation: appearance-panel-enter var(--md-app-motion-duration-medium) var(--md-app-motion-easing-emphasized);
+}
+
+.appearance-group {
+  display: grid;
+  gap: 12px;
+  padding: 0 0 20px;
+}
+
+.appearance-group + .appearance-group {
+  padding-top: 20px;
+}
+
+.appearance-group:not(:last-child) {
   border-bottom: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
 }
 
-.appearance-section__header {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+.appearance-group:last-child {
+  padding-bottom: 0;
+}
 
-  > .material-symbols-rounded {
-    width: 30px;
-    height: 30px;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    color: var(--md-sys-color-on-secondary-container);
-    background: var(--md-sys-color-secondary-container);
-    font-size: 18px;
-  }
-
+.appearance-group__header {
   h3 {
     margin: 0;
     color: var(--md-sys-color-on-surface);
     font-size: var(--md-sys-typescale-title-medium-size);
     font-weight: var(--md-sys-typescale-title-medium-weight);
     line-height: var(--md-sys-typescale-title-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-title-medium-tracking);
   }
 
   p {
-    margin: 2px 0 0;
+    margin: 3px 0 0;
     color: var(--md-sys-color-on-surface-variant);
     font-size: var(--md-sys-typescale-body-small-size);
     line-height: var(--md-sys-typescale-body-small-line-height);
+    letter-spacing: var(--md-sys-typescale-body-small-tracking);
   }
 }
 
@@ -389,14 +621,14 @@ function setManualSeedColor(event: Event) {
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   overflow: hidden;
   border: 1px solid var(--md-sys-color-outline);
-  border-radius: 16px;
+  border-radius: var(--md-app-control-radius);
   background: var(--md-sys-color-surface-container-low);
 }
 
 .appearance-segmented__button {
   position: relative;
   display: inline-flex;
-  min-height: 48px;
+  min-height: 40px;
   overflow: hidden;
   align-items: center;
   justify-content: center;
@@ -406,8 +638,11 @@ function setManualSeedColor(event: Event) {
   padding: 0 8px;
   color: var(--md-sys-color-on-surface-variant);
   background: transparent;
-  font-size: 12px;
-  font-weight: 500;
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
   cursor: pointer;
 
   &::before {
@@ -455,24 +690,34 @@ function setManualSeedColor(event: Event) {
   display: grid;
   gap: 5px;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 11px;
-  font-weight: 600;
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: var(--md-sys-typescale-label-small-weight);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
 }
 
 .appearance-field--wide {
   grid-column: 1 / -1;
 }
 
+.appearance-switch--wide {
+  grid-column: 1 / -1;
+}
+
 .appearance-field input,
 .appearance-field select {
   width: 100%;
-  min-height: 48px;
+  min-height: 56px;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 4px;
   padding: 0 10px;
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface-container-lowest);
-  font-size: 12px;
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
   outline: none;
 
   &:focus {
@@ -505,8 +750,8 @@ function setManualSeedColor(event: Event) {
 
   input {
     position: relative;
-    width: 46px;
-    height: 28px;
+    width: 52px;
+    height: 32px;
     appearance: none;
     border: 2px solid var(--md-sys-color-outline);
     border-radius: 999px;
@@ -519,8 +764,8 @@ function setManualSeedColor(event: Event) {
     &::before {
       content: '';
       position: absolute;
-      top: 4px;
-      left: 4px;
+      top: 6px;
+      left: 6px;
       width: 16px;
       height: 16px;
       border-radius: 999px;
@@ -538,16 +783,32 @@ function setManualSeedColor(event: Event) {
     }
 
     &:checked::before {
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       background: var(--md-sys-color-on-primary);
-      transform: translate(14px, -3px);
+      transform: translate(14px, -4px);
     }
   }
 
-  span {
+  > span {
+    display: grid;
+    gap: 2px;
     color: var(--md-sys-color-on-surface);
-    font-size: 12px;
+    font-family: var(--md-sys-typescale-body-medium-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: var(--md-sys-typescale-body-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+  }
+
+  strong {
+    font-weight: var(--md-sys-typescale-label-large-weight);
+  }
+
+  small {
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: var(--md-sys-typescale-body-small-size);
+    line-height: var(--md-sys-typescale-body-small-line-height);
+    letter-spacing: var(--md-sys-typescale-body-small-tracking);
   }
 }
 
@@ -595,9 +856,11 @@ function setManualSeedColor(event: Event) {
 .appearance-palette__label {
   grid-area: label;
   overflow: hidden;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.2;
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -609,24 +872,86 @@ function setManualSeedColor(event: Event) {
   }
 }
 
+.appearance-range--prominent {
+  gap: 6px;
+  padding: 4px 0;
+  transition: opacity var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+
+  &.is-disabled {
+    opacity: 0.46;
+  }
+
+  input {
+    height: 24px;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  input:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.appearance-range__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+
+  strong {
+    font-weight: var(--md-sys-typescale-label-large-weight);
+  }
+
+  output {
+    min-width: 48px;
+    color: var(--md-sys-color-primary);
+    font-family: var(--md-app-number-font-family);
+    font-weight: 600;
+    text-align: right;
+  }
+}
+
+.appearance-range__supporting {
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+}
+
 .appearance-panel__footer {
+  position: sticky;
+  bottom: -24px;
+  z-index: 4;
   display: flex;
   justify-content: flex-end;
+  padding: 12px 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: 0 -8px 12px var(--md-sys-color-surface-container-high);
 }
 
 .appearance-reset-button {
   display: inline-flex;
-  min-height: 48px;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 999px;
-  padding: 0 12px;
+  padding: 0 24px;
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface-container-low);
-  font-size: 12px;
-  font-weight: 500;
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
   cursor: pointer;
 
   &:disabled {
@@ -635,7 +960,43 @@ function setManualSeedColor(event: Event) {
   }
 }
 
+@keyframes appearance-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 640px) {
+  .appearance-panel {
+    min-height: calc(88vh - 104px);
+  }
+
+  .appearance-tabs {
+    top: -8px;
+    border-radius: var(--md-sys-shape-corner-large);
+  }
+
+  .appearance-tab {
+    min-height: 48px;
+    flex-direction: column;
+    gap: 1px;
+    font-size: var(--md-sys-typescale-label-medium-size);
+
+    .material-symbols-rounded {
+      font-size: 18px;
+    }
+  }
+
+  .appearance-tab-content {
+    padding-top: 16px;
+  }
+
   .appearance-field-grid,
   .appearance-range-grid {
     grid-template-columns: 1fr;
@@ -650,10 +1011,12 @@ function setManualSeedColor(event: Event) {
   }
 
   .appearance-segmented__button {
-    min-height: 48px;
-    flex-direction: column;
-    gap: 2px;
-    font-size: 12px;
+    min-height: 40px;
+    font-size: var(--md-sys-typescale-label-medium-size);
+  }
+
+  .appearance-panel__footer {
+    bottom: -24px;
   }
 }
 </style>

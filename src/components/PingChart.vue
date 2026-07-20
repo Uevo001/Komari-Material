@@ -461,7 +461,7 @@ const pingChartOption = computed(() => {
 
         const time = rowData.time as string
         const timeStr = formatTimeForTooltip(time, hours)
-        let html = `<div style="font-weight:600;margin-bottom:6px;color:${chartThemeColors.value.textSecondary}">${timeStr}</div>`
+        let html = `<div style="font-weight:500;margin-bottom:6px;color:${chartThemeColors.value.textSecondary}">${timeStr}</div>`
         html += '<div style="display:flex;flex-direction:column;gap:4px">'
 
         // 按延迟值排序显示
@@ -474,7 +474,7 @@ const pingChartOption = computed(() => {
             const color = task ? colorMap.get(task.id) || chartColors[0] : chartColors[0]
             const colorDot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:8px;flex-shrink:0"></span>`
             const safeSeriesName = escapeHtml(item.seriesName)
-            html += `<div style="display:flex;align-items:center">${colorDot}<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${safeSeriesName}</span><span style="margin-left:auto;font-weight:600;margin-left:16px;font-variant-numeric:tabular-nums">${Math.round(item.value)} ms</span></div>`
+            html += `<div style="display:flex;align-items:center">${colorDot}<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${safeSeriesName}</span><span style="margin-left:auto;font-weight:500;margin-left:16px;font-variant-numeric:tabular-nums">${Math.round(item.value)} ms</span></div>`
           }
         }
         html += '</div>'
@@ -714,7 +714,11 @@ const blurClass = computed(() => {
   strong {
     overflow: hidden;
     color: var(--md-sys-color-on-surface);
-    font-size: 15px;
+    font-family: var(--md-sys-typescale-title-small-font);
+    font-size: var(--md-sys-typescale-title-small-size);
+    font-weight: 800;
+    line-height: var(--md-sys-typescale-title-small-line-height);
+    letter-spacing: var(--md-sys-typescale-title-small-tracking);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -732,7 +736,10 @@ const blurClass = computed(() => {
   gap: 8px;
   margin-top: 5px;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 12px;
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
 }
 
 .ping-chart__toolbar {
@@ -754,8 +761,11 @@ const blurClass = computed(() => {
   align-items: center;
   gap: 10px;
   color: var(--md-sys-color-on-surface);
-  font-size: 14px;
-  font-weight: 600;
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
   cursor: pointer;
 
   input {
@@ -767,8 +777,8 @@ const blurClass = computed(() => {
 
 .ping-switch__track {
   position: relative;
-  width: 46px;
-  height: 26px;
+  width: 52px;
+  height: 32px;
   border-radius: 999px;
   background: var(--md-sys-color-surface-variant);
   box-shadow: inset 0 0 0 1px var(--md-sys-color-outline);
@@ -777,10 +787,10 @@ const blurClass = computed(() => {
 
 .ping-switch__thumb {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 18px;
-  height: 18px;
+  top: 8px;
+  left: 8px;
+  width: 16px;
+  height: 16px;
   border-radius: 999px;
   background: var(--md-sys-color-outline);
   transition:

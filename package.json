@@ -1,7 +1,7 @@
 {
   "name": "komari-theme-material",
   "type": "module",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "packageManager": "pnpm@10.24.0",
   "description": "A Material Design 3 theme for Komari Monitor.",
   "author": {
@@ -39,6 +39,8 @@
     "lint:eslint": "eslint . --fix --cache"
   },
   "dependencies": {
+    "@fontsource-variable/noto-sans-sc": "catalog:",
+    "@fontsource-variable/roboto": "catalog:",
     "@material-symbols/font-400": "catalog:",
     "@material/material-color-utilities": "catalog:",
     "@material/web": "catalog:",

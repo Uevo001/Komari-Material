@@ -374,8 +374,11 @@ function diskPercent(node: NodeData) {
   padding: 0 9px;
   color: var(--md-sys-color-on-error-container);
   background: var(--md-sys-color-error-container);
-  font-size: 11px;
-  font-weight: 500;
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: var(--md-sys-typescale-label-small-weight);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
 }
 
 .node-compact-card__status-badge--online {
@@ -403,9 +406,11 @@ function diskPercent(node: NodeData) {
   overflow: hidden;
   margin: 0;
   color: var(--md-sys-color-on-surface);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.25;
+  font-family: var(--md-sys-typescale-title-small-font);
+  font-size: var(--md-sys-typescale-title-small-size);
+  font-weight: 800;
+  line-height: var(--md-sys-typescale-title-small-line-height);
+  letter-spacing: var(--md-sys-typescale-title-small-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -416,8 +421,10 @@ function diskPercent(node: NodeData) {
   flex-wrap: wrap;
   gap: 3px 7px;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 11px;
-  line-height: 1.3;
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
 }
 
 .node-compact-card__chart-button {
@@ -452,14 +459,23 @@ function diskPercent(node: NodeData) {
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  font-size: 11px;
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
+
+  > .md-number {
+    font-weight: 800;
+  }
 }
 
 .node-compact-card__hint {
   overflow: hidden;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 10px;
-  line-height: 1.2;
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  letter-spacing: var(--md-sys-typescale-label-small-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

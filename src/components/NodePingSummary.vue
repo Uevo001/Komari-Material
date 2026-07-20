@@ -436,9 +436,11 @@ const lossToneClass = computed<PingTone>(() => {
 .node-ping-summary__value {
   overflow: hidden;
   color: var(--md-sys-color-on-surface);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.2;
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: 800;
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -524,9 +526,11 @@ const lossToneClass = computed<PingTone>(() => {
     min-width: 0;
     overflow: hidden;
     color: var(--md-sys-color-on-surface);
-    font-size: 12px;
-    font-weight: 650;
-    line-height: 1.2;
+    font-family: var(--md-sys-typescale-label-medium-font);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: 800;
+    line-height: var(--md-sys-typescale-label-medium-line-height);
+    letter-spacing: var(--md-sys-typescale-label-medium-tracking);
     text-align: right;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -577,7 +581,7 @@ const lossToneClass = computed<PingTone>(() => {
 }
 
 .node-ping-summary--compact .node-ping-summary__value {
-  font-size: 12px;
+  font-size: var(--md-sys-typescale-label-medium-size);
 }
 
 .node-ping-summary--compact .node-ping-summary__sparkline {
@@ -607,7 +611,11 @@ const lossToneClass = computed<PingTone>(() => {
   }
 
   strong {
-    font-size: 11px;
+    font-family: var(--md-sys-typescale-label-small-font);
+    font-size: var(--md-sys-typescale-label-small-size);
+    font-weight: 800;
+    line-height: var(--md-sys-typescale-label-small-line-height);
+    letter-spacing: var(--md-sys-typescale-label-small-tracking);
   }
 }
 
