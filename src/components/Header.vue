@@ -11,6 +11,8 @@ const appStore = useAppStore()
 const isScrolled = inject<ReturnType<typeof ref<boolean>>>('isScrolled', ref(false))
 const siteFavicon = ref('/favicon.ico')
 
+const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
+
 const brandTitle = computed(() => appStore.publicSettings?.sitename || 'Komari Material')
 const showThemeIdentity = computed(() => brandTitle.value !== 'Komari Material')
 
@@ -85,7 +87,13 @@ function handleButtonClick(action: string) {
 </script>
 
 <template>
-  <header class="material-top-app-bar" :class="{ 'material-top-app-bar--scrolled': isScrolled }">
+  <header
+    class="material-top-app-bar"
+    :class="{
+      'material-top-app-bar--scrolled': isScrolled,
+      'md-surface-glass': isScrolled && hasBackgroundBlur,
+    }"
+  >
     <div class="material-top-app-bar__inner" :style="containerStyle">
       <button class="material-brand" type="button" aria-label="返回首页" @click="router.push('/')">
         <img class="material-brand__avatar" :src="siteFavicon" alt="">

@@ -24,6 +24,7 @@ interface ModalState {
 
 const appStore = useAppStore()
 const isDark = computed(() => appStore.isDark)
+const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
 const isScrolled = ref(false)
 const toasts = ref<ToastItem[]>([])
 const activeModal = ref<ModalState | null>(null)
@@ -216,6 +217,15 @@ watch(
   { immediate: true },
 )
 
+// 毛玻璃模式下给 body 打开关，让实色控件跟随半透明体系
+watch(
+  hasBackgroundBlur,
+  (blur) => {
+    document.body.classList.toggle('translucent', blur)
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
   handleScroll()
   window.addEventListener('scroll', handleScroll, { passive: true })
@@ -238,7 +248,14 @@ onUnmounted(() => {
   </Transition>
 
   <Transition name="fab">
-    <button v-if="isScrolled" class="material-back-top" type="button" aria-label="返回顶部" @click="scrollToTop">
+    <button
+      v-if="isScrolled"
+      class="material-back-top"
+      :class="{ 'md-surface-glass': hasBackgroundBlur }"
+      type="button"
+      aria-label="返回顶部"
+      @click="scrollToTop"
+    >
       <span class="material-symbols-rounded">keyboard_arrow_up</span>
     </button>
   </Transition>
@@ -308,11 +325,17 @@ onUnmounted(() => {
   cursor: pointer;
   transition:
     box-shadow var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
-    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 
   &:hover {
     box-shadow: var(--md-app-elevation-3);
   }
+}
+
+.material-back-top.md-surface-glass {
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--md-app-elevation-3);
 }
 
 .material-snackbar-host {

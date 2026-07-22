@@ -607,3 +607,25 @@ img {
     padding-right: 14px;
   }
 }
+
+// 毛玻璃模式：实色控件底色跟随卡片半透明体系（选中/active 态保持实色以保证可读性）
+.translucent {
+  .md-control-button,
+  .md-segmented-control,
+  .md-alert,
+  .md-alert--error {
+    background: color-mix(
+      in srgb,
+      var(--md-sys-color-surface-container) var(--md-app-card-surface-opacity, 80%),
+      transparent
+    );
+  }
+
+  .md-chip--error {
+    background: color-mix(
+      in srgb,
+      var(--md-sys-color-error-container) var(--md-app-card-surface-opacity, 80%),
+      transparent
+    );
+  }
+}
