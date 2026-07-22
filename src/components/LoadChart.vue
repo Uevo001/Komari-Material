@@ -55,7 +55,6 @@ const chartThemeColors = computed(() => {
     borderColor: colors['outline-variant']!,
     splitLineColor: isDark.value ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
     tooltipBg: colors['surface-container-high']!,
-    tooltipShadow: isDark.value ? 'rgba(0, 0, 0, 0.45)' : 'rgba(0, 0, 0, 0.16)',
     crosshairColor: isDark.value ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.16)',
   }
 })
@@ -69,7 +68,6 @@ const baseTooltipConfig = computed(() => ({
   borderWidth: 0,
   borderRadius: 8,
   padding: [10, 14],
-  boxShadow: `0 4px 16px ${chartThemeColors.value.tooltipShadow}`,
   textStyle: {
     color: chartThemeColors.value.text,
     fontSize: 13,

@@ -118,14 +118,11 @@ function handleButtonClick(action: string) {
   position: sticky;
   top: 0;
   z-index: 20;
-  transition:
-    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
-    box-shadow var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+  transition: background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 }
 
 .material-top-app-bar--scrolled {
   background: var(--md-sys-color-surface-container);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
 }
 
 .material-top-app-bar__inner {
@@ -154,7 +151,6 @@ function handleButtonClick(action: string) {
   height: 36px;
   flex-shrink: 0;
   border-radius: 999px;
-  box-shadow: 0 0 0 1px var(--md-sys-color-outline-variant);
 }
 
 .material-brand__copy {

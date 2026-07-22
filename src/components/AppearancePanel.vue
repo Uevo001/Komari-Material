@@ -509,7 +509,6 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: var(--md-sys-shape-corner-large);
   background: var(--md-sys-color-surface-container-high);
-  box-shadow: 0 8px 12px var(--md-sys-color-surface-container-high);
 }
 
 .appearance-tab {
@@ -753,9 +752,9 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
     width: 52px;
     height: 32px;
     appearance: none;
-    border: 2px solid var(--md-sys-color-outline);
+    border: 2px solid transparent;
     border-radius: 999px;
-    background: var(--md-sys-color-surface-container-highest);
+    background: var(--md-sys-color-surface-variant);
     cursor: pointer;
     transition:
       background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
@@ -933,7 +932,6 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   padding: 12px 0 0;
   border-top: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
   background: var(--md-sys-color-surface-container-high);
-  box-shadow: 0 -8px 12px var(--md-sys-color-surface-container-high);
 }
 
 .appearance-reset-button {

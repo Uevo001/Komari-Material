@@ -384,9 +384,7 @@ const lossToneClass = computed<PingTone>(() => {
   padding: 8px 10px 7px;
   color: var(--ping-accent-color);
   background: var(--md-sys-color-surface-container-high);
-  transition:
-    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
-    box-shadow var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+  transition: background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
 }
 
 .node-ping-summary__panel::before {

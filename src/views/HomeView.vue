@@ -314,7 +314,6 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
   padding: 0 6px 0 16px;
   color: var(--md-sys-color-on-surface-variant);
   background: var(--md-sys-color-surface-container-high);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-sys-color-outline-variant) 42%, transparent);
   transition:
     border-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
     box-shadow var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
@@ -323,9 +322,7 @@ function handleNodeClick(node: typeof nodesStore.nodes[number]) {
 
   &:focus-within {
     border-color: var(--md-sys-color-primary);
-    box-shadow:
-      inset 0 0 0 1px var(--md-sys-color-primary),
-      0 0 0 3px color-mix(in srgb, var(--md-sys-color-primary) 14%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--md-sys-color-primary) 14%, transparent);
     color: var(--md-sys-color-primary);
     background: var(--md-sys-color-surface-container-highest);
   }

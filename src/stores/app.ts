@@ -230,7 +230,7 @@ const useAppStore = defineStore('app', () => {
     if (typeof value === 'number' && Number.isFinite(value)) {
       return Math.min(95, Math.max(50, value))
     }
-    return 78
+    return 80
   })
 
   const fontFamily = computed<string>(() => {
