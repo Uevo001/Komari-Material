@@ -46,3 +46,12 @@ __screenshots__/
 # Theme build output
 komari-theme-naive-build-*.zip
 komari-theme-material-build-*.zip
+
+# Local AI agent and assistant instructions
+AGENTS.md
+**/AGENTS.md
+CLAUDE.md
+**/CLAUDE.md
+.agents/
+.codex/
+.claude/
