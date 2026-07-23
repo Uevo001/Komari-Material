@@ -210,25 +210,27 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
 
 <template>
   <div class="appearance-panel">
-    <nav class="appearance-tabs" role="tablist" aria-label="外观设置分类">
-      <button
-        v-for="(tab, index) in appearanceTabs"
-        :id="`appearance-tab-${tab.value}`"
-        :key="tab.value"
-        class="appearance-tab"
-        :class="{ 'is-active': activeTab === tab.value }"
-        role="tab"
-        type="button"
-        :aria-selected="activeTab === tab.value"
-        :aria-controls="`appearance-panel-${tab.value}`"
-        :tabindex="activeTab === tab.value ? 0 : -1"
-        @click="setActiveTab(tab.value)"
-        @keydown="handleTabKeydown($event, index)"
-      >
-        <span class="material-symbols-rounded">{{ tab.icon }}</span>
-        <span>{{ tab.label }}</span>
-      </button>
-    </nav>
+    <div class="appearance-sidebar">
+      <nav class="appearance-tabs" role="tablist" aria-label="外观设置分类">
+        <button
+          v-for="(tab, index) in appearanceTabs"
+          :id="`appearance-tab-${tab.value}`"
+          :key="tab.value"
+          class="appearance-tab"
+          :class="{ 'is-active': activeTab === tab.value }"
+          role="tab"
+          type="button"
+          :aria-selected="activeTab === tab.value"
+          :aria-controls="`appearance-panel-${tab.value}`"
+          :tabindex="activeTab === tab.value ? 0 : -1"
+          @click="setActiveTab(tab.value)"
+          @keydown="handleTabKeydown($event, index)"
+        >
+          <span class="material-symbols-rounded">{{ tab.icon }}</span>
+          <span>{{ tab.label }}</span>
+        </button>
+      </nav>
+    </div>
 
     <div class="appearance-tab-content">
       <div
@@ -281,7 +283,7 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
             </button>
           </div>
 
-          <div class="appearance-color-layout">
+          <div v-if="appStore.monetColorMode === 'seed'" class="appearance-color-layout appearance-color-layout--seed">
             <label class="appearance-field appearance-field--color">
               <span>手动种子色</span>
               <span class="appearance-color-input">
@@ -289,30 +291,30 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
                 <input type="text" :value="appStore.manualMaterialSeedColor" spellcheck="false" @change="setManualSeedColor">
               </span>
             </label>
+          </div>
 
-            <div class="appearance-palette-grid" role="radiogroup" aria-label="莫奈调色盘">
-              <button
-                v-for="palette in paletteOptions"
-                :key="palette.key"
-                class="appearance-palette"
-                :class="{ 'is-active': selectedPalette === palette.key }"
-                role="radio"
-                :aria-checked="selectedPalette === palette.key"
-                type="button"
-                :title="palette.seedColor"
-                @click="setPalette(palette.key)"
-              >
-                <span class="appearance-palette__swatches">
-                  <span
-                    v-for="color in palette.swatches"
-                    :key="color"
-                    class="appearance-palette__swatch"
-                    :style="{ backgroundColor: color }"
-                  />
-                </span>
-                <span class="appearance-palette__label">{{ palette.label }}</span>
-              </button>
-            </div>
+          <div v-else-if="appStore.monetColorMode === 'palette'" class="appearance-palette-grid" role="radiogroup" aria-label="莫奈调色盘">
+            <button
+              v-for="palette in paletteOptions"
+              :key="palette.key"
+              class="appearance-palette"
+              :class="{ 'is-active': selectedPalette === palette.key }"
+              role="radio"
+              :aria-checked="selectedPalette === palette.key"
+              type="button"
+              :title="palette.seedColor"
+              @click="setPalette(palette.key)"
+            >
+              <span class="appearance-palette__swatches">
+                <span
+                  v-for="color in palette.swatches"
+                  :key="color"
+                  class="appearance-palette__swatch"
+                  :style="{ backgroundColor: color }"
+                />
+              </span>
+              <span class="appearance-palette__label">{{ palette.label }}</span>
+            </button>
           </div>
         </section>
       </div>
@@ -494,20 +496,28 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
 <style scoped lang="scss">
 .appearance-panel {
   display: grid;
+  width: 100%;
+  min-width: 0;
   min-height: min(560px, calc(88vh - 104px));
-  grid-template-rows: auto 1fr auto;
-  gap: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+}
+
+.appearance-sidebar {
+  position: sticky;
+  top: -8px;
+  z-index: 5;
+  min-width: 0;
+  padding-top: 8px;
+  background: var(--md-sys-color-surface-container-high);
 }
 
 .appearance-tabs {
-  position: sticky;
-  top: -8px;
-  z-index: 4;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   overflow: hidden;
   border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-large);
+  border-radius: 14px;
   background: var(--md-sys-color-surface-container-high);
 }
 
@@ -519,6 +529,7 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   justify-content: center;
   gap: 8px;
   border: 0;
+  padding: 0 8px;
   color: var(--md-sys-color-on-surface-variant);
   background: transparent;
   font-family: var(--md-sys-typescale-label-large-font);
@@ -568,12 +579,17 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
 }
 
 .appearance-tab-content {
+  width: 100%;
   min-height: 0;
+  min-width: 0;
+  overflow: visible;
   padding: 20px 2px 16px;
 }
 
 .appearance-tab-panel {
   display: grid;
+  width: 100%;
+  min-width: 0;
   gap: 0;
   animation: appearance-panel-enter var(--md-app-motion-duration-medium) var(--md-app-motion-easing-emphasized);
 }
@@ -581,7 +597,7 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
 .appearance-group {
   display: grid;
   gap: 12px;
-  padding: 0 0 20px;
+  padding: 0 0 22px;
 }
 
 .appearance-group + .appearance-group {
@@ -597,6 +613,11 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
 }
 
 .appearance-group__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+
   h3 {
     margin: 0;
     color: var(--md-sys-color-on-surface);
@@ -607,7 +628,8 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   }
 
   p {
-    margin: 3px 0 0;
+    margin: 0;
+    text-align: right;
     color: var(--md-sys-color-on-surface-variant);
     font-size: var(--md-sys-typescale-body-small-size);
     line-height: var(--md-sys-typescale-body-small-line-height);
@@ -620,7 +642,7 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   overflow: hidden;
   border: 1px solid var(--md-sys-color-outline);
-  border-radius: var(--md-app-control-radius);
+  border-radius: 12px;
   background: var(--md-sys-color-surface-container-low);
 }
 
@@ -709,7 +731,7 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   width: 100%;
   min-height: 56px;
   border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 4px;
+  border-radius: 10px;
   padding: 0 10px;
   color: var(--md-sys-color-on-surface);
   background: var(--md-sys-color-surface-container-lowest);
@@ -730,6 +752,10 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   grid-template-columns: minmax(150px, 0.62fr) minmax(0, 1.38fr);
   gap: 8px;
   align-items: end;
+}
+
+.appearance-color-layout--seed {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .appearance-color-input {
@@ -973,11 +999,15 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
 @media (max-width: 640px) {
   .appearance-panel {
     min-height: calc(88vh - 104px);
+    grid-template-rows: auto auto auto;
   }
 
   .appearance-tabs {
-    top: -8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
+    border: 1px solid var(--md-sys-color-outline-variant);
     border-radius: var(--md-sys-shape-corner-large);
+    background: var(--md-sys-color-surface-container-high);
   }
 
   .appearance-tab {
@@ -992,7 +1022,16 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   }
 
   .appearance-tab-content {
-    padding-top: 16px;
+    padding: 16px 2px;
+  }
+
+  .appearance-group__header {
+    display: grid;
+    gap: 4px;
+
+    p {
+      text-align: left;
+    }
   }
 
   .appearance-field-grid,
