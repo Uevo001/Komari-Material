@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { NodeData } from '@/stores/nodes'
-import { computed, h } from 'vue'
+import { computed, defineAsyncComponent, h } from 'vue'
 import NodePingSummary from '@/components/NodePingSummary.vue'
-import PingChart from '@/components/PingChart.vue'
 import TrafficProgress from '@/components/TrafficProgress.vue'
 import { useAppStore } from '@/stores/app'
 import { formatBytesWithConfig, formatDateTime, getStatus } from '@/utils/helper'
@@ -17,6 +16,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   click: []
 }>()
+
+// 懒加载：PingChart 引入 echarts（~552KB），仅在点击按钮打开图表时才需要。
+// 静态 import 会把它拖进首屏 chunk，改异步后 echarts 不再阻塞首屏。
+const PingChart = defineAsyncComponent(() => import('@/components/PingChart.vue'))
 
 const appStore = useAppStore()
 const themeColors = computed(() => appStore.materialThemeTokens.chartColors)

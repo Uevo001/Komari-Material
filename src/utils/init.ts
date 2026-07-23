@@ -20,6 +20,12 @@ interface InitConfig {
   healthCheckTimeout?: number
   /** POST 模式连续失败次数阈值 */
   postFailureThreshold?: number
+  /**
+   * WebSocket 处于连接态时的对账轮询间隔（毫秒）。
+   *  WS 本身已是实时通道，此时的高频 polling 仅为防止 WS 静默失败导致数据停滞。
+   *  默认 60 秒，远低于 WS 断开时的 3 秒主轮询。
+   */
+  wsActivePollInterval?: number
 }
 
 const DEFAULT_CONFIG: Required<InitConfig> = {
@@ -27,6 +33,7 @@ const DEFAULT_CONFIG: Required<InitConfig> = {
   wsMaxReconnectAttempts: 5,
   healthCheckTimeout: 5000,
   postFailureThreshold: 3,
+  wsActivePollInterval: 60000,
 }
 
 /** 初始化状态管理 */
@@ -40,6 +47,11 @@ class InitManager {
   private isInitialized = false
   private useWebSocket: boolean | null = null // 根据主题配置决定
   private postFailureCount = 0
+  /**
+   * WebSocket 是否处于连接态（实时数据主通道）。
+   *  为 true 时 polling 降级为低频对账，避免与 WS 重复拉取。
+   */
+  private wsActive = false
 
   constructor(config: InitConfig = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -50,9 +62,14 @@ class InitManager {
 
   /**
    * 获取轮询间隔（毫秒）
-   * 从 publicSettings.theme_settings.dataUpdateInterval 读取，默认 3 秒
+   * - WebSocket 处于连接态：使用低频对账间隔（默认 60s），WS 已实时推送，polling 仅防静默失败
+   * - 其他情况（HTTP 模式或 WS 未连上）：读取主题配置的 dataUpdateInterval，默认 3s
    */
   private getPollInterval(): number {
+    if (this.wsActive) {
+      return this.config.wsActivePollInterval
+    }
+
     const settings = this.appStore.publicSettings?.theme_settings
     const interval = settings?.dataUpdateInterval
     // 确保值在合理范围内（1-60秒）
@@ -297,6 +314,7 @@ class InitManager {
       // 使用 ping 验证连接，10 秒超时
       await client.ensureWebSocketConnectedWithPing(10000)
       this.nodesStore.updateWsState('connected', 0)
+      this.setWsActive(true)
 
       // 连接成功，重置错误状态
       this.appStore.connectionError = false
@@ -307,6 +325,7 @@ class InitManager {
     catch (error) {
       console.error('[InitManager] WebSocket connection failed:', error)
       this.nodesStore.updateWsState('disconnected')
+      this.setWsActive(false)
       this.scheduleReconnect()
     }
   }
@@ -325,6 +344,7 @@ class InitManager {
     ws.addEventListener('close', () => {
       // 如果当前是已连接状态且还在使用 WebSocket 模式，触发重连
       if (this.useWebSocket === true && this.nodesStore.wsConnectionState === 'connected') {
+        this.setWsActive(false)
         this.nodesStore.updateWsState('disconnected')
         this.scheduleReconnect()
       }
@@ -373,6 +393,7 @@ class InitManager {
    */
   private fallbackToPostMode(): void {
     this.useWebSocket = false
+    this.setWsActive(false)
     this.nodesStore.updateWsState('disconnected', this.config.wsMaxReconnectAttempts)
 
     // 关闭 WebSocket 连接
@@ -382,6 +403,21 @@ class InitManager {
 
     // 显示提示
     window.$message?.warning('WebSocket 无法连接，尝试回落 POST 模式。')
+  }
+
+  /**
+   * 设置 WebSocket 活跃态并按新间隔重启轮询
+   * @param active WS 是否处于连接态
+   */
+  private setWsActive(active: boolean): void {
+    if (this.wsActive === active) {
+      return
+    }
+    this.wsActive = active
+    // 间隔随状态变化，重启轮询使新间隔立即生效
+    if (this.pollTimer) {
+      this.startPolling()
+    }
   }
 
   /**
@@ -399,6 +435,10 @@ class InitManager {
 
   /**
    * 执行轮询任务
+   *
+   * WebSocket 处于连接态时，实时数据已由 WS 推送，本任务仅以低频
+   * （wsActivePollInterval，默认 60s）对账一次，防止 WS 静默失败导致数据停滞。
+   * WS 断开时 getPollInterval() 回到高频（默认 3s），承担主数据源职责。
    */
   private async poll(): Promise<void> {
     if (this.isPolling) {
@@ -468,6 +508,7 @@ class InitManager {
     // 根据主题配置重置连接模式
     const configuredMode = this.appStore.rpcTransportMode
     this.useWebSocket = configuredMode === 'websocket'
+    this.setWsActive(false)
     this.nodesStore.updateWsState('disconnected', 0)
 
     // 重新获取用户信息
