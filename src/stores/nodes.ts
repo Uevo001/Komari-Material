@@ -277,7 +277,7 @@ const useNodesStore = defineStore('nodes', () => {
       }
     }
 
-    // 按 weight 降序排序（weight 越大越靠前）
+    // 按 weight 升序排序（weight 越小越靠前）
     sortNodesByWeight()
   }
 
@@ -358,7 +358,7 @@ const useNodesStore = defineStore('nodes', () => {
       }
     }
 
-    // 按 weight 降序排序
+    // 按 weight 升序排序
     sortNodesByWeight()
   }
 

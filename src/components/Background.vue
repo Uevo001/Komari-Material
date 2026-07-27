@@ -55,9 +55,12 @@ const currentUrl = computed(() => appStore.currentBackgroundUrl)
 // 背景类型
 const backgroundType = computed(() => appStore.backgroundType)
 
-// 是否显示加载完成的背景
-const showLoadedBackground = computed(() => {
-  return showBackground.value && currentUrl.value && isLoaded.value && !hasError.value
+// 视频必须先挂载才能触发 loadeddata；图片则等预加载完成后再显示。
+const showMediaBackground = computed(() => {
+  return showBackground.value
+    && currentUrl.value
+    && !hasError.value
+    && (backgroundType.value === 'video' || isLoaded.value)
 })
 
 // 是否显示默认背景（未启用自定义背景、未配置 URL、或加载失败时）
@@ -170,7 +173,7 @@ onUnmounted(() => {
 
     <!-- 自定义背景媒体层 -->
     <Transition name="fade">
-      <div v-if="showLoadedBackground" class="background-media" :style="backgroundStyle">
+      <div v-if="showMediaBackground" class="background-media" :style="backgroundStyle">
         <!-- 图片背景 -->
         <div
           v-if="backgroundType === 'image'"

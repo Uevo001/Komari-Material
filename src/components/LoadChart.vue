@@ -2,7 +2,7 @@
 import type { RecordFormat } from '@/utils/recordHelper'
 import { useIntervalFn } from '@vueuse/core'
 import dayjs from 'dayjs'
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import VChart from 'vue-echarts'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
@@ -20,12 +20,11 @@ const appStore = useAppStore()
 const nodesStore = useNodesStore()
 
 // 从 publicSettings 获取记录保留时间
-const maxRecordPreserveTime = computed(() => appStore.publicSettings?.record_preserve_time || 720)
+const maxRecordPreserveTime = computed(() => appStore.publicSettings?.record_preserve_time ?? 720)
 
 // 从 publicSettings.theme_settings 获取数据更新间隔（秒），默认 3 秒
 const dataUpdateInterval = computed(() => {
-  const settings = appStore.publicSettings?.theme_settings
-  const interval = settings?.dataUpdateInterval
+  const interval = appStore.themeSettings.dataUpdateInterval
   // 确保值在合理范围内（1-60秒）
   if (typeof interval === 'number' && interval >= 1 && interval <= 60) {
     return interval * 1000 // 转换为毫秒
@@ -165,6 +164,8 @@ const remoteData = shallowRef<LoadChartRecord[]>([])
 const loading = ref(false)
 const isInitialLoad = ref(true) // 是否为首次加载（用于控制实时模式下的加载状态）
 const error = ref<string | null>(null)
+let latestFetchId = 0
+let activeFetchCount = 0
 
 // 节点信息
 const nodeInfo = computed(() => nodesStore.nodesByUuid.get(props.uuid))
@@ -201,68 +202,65 @@ function statusToRecordFormat(records: LoadChartRecord[]): RecordFormat[] {
   }))
 }
 
-async function fetchRecentData() {
-  if (!props.uuid)
+async function requestRecentData(uuid: string): Promise<LoadChartRecord[]> {
+  const result = await rpc.getNodeRecentStatus(uuid)
+  return [...(result?.records || [])]
+    .sort((a, b) => dayjs(a.time).valueOf() - dayjs(b.time).valueOf())
+    .slice(-150)
+}
+
+async function requestHistoryData(uuid: string, hours: number): Promise<LoadChartRecord[]> {
+  const response = await api.getLoadRecords(uuid, hours)
+  return [...(response.records || [])].sort(
+    (a, b) => dayjs(a.time).valueOf() - dayjs(b.time).valueOf(),
+  )
+}
+
+async function fetchData(options: { skipIfBusy?: boolean } = {}) {
+  if (options.skipIfBusy && activeFetchCount > 0)
     return
 
-  // 只在首次加载时显示 loading
-  if (isInitialLoad.value) {
+  const requestId = ++latestFetchId
+  if (!props.uuid) {
+    remoteData.value = []
+    loading.value = false
+    error.value = null
+    return
+  }
+
+  const uuid = props.uuid
+  const realtime = isRealtime.value
+  const hours = selectedHours.value || 4
+
+  activeFetchCount += 1
+  if (!realtime || isInitialLoad.value) {
     loading.value = true
   }
   error.value = null
 
   try {
-    const result = await rpc.getNodeRecentStatus(props.uuid)
-    const records = result?.records || []
-    records.sort((a, b) => dayjs(a.time).valueOf() - dayjs(b.time).valueOf())
-    const maxLength = 150
-    remoteData.value = records.slice(-maxLength)
-  }
-  catch (err) {
-    error.value = err instanceof Error ? err.message : '获取数据失败'
-    remoteData.value = []
-  }
-  finally {
-    loading.value = false
-    isInitialLoad.value = false
-  }
-}
+    const records = realtime
+      ? await requestRecentData(uuid)
+      : await requestHistoryData(uuid, hours)
 
-async function fetchHistoryData() {
-  if (!props.uuid)
-    return
-
-  const hours = selectedHours.value || 4
-
-  loading.value = true
-  error.value = null
-
-  try {
-    const response = await api.getLoadRecords(props.uuid, hours)
-    const records = response.records || []
-
-    // 按时间排序
-    records.sort((a, b) =>
-      dayjs(a.time).valueOf() - dayjs(b.time).valueOf(),
-    )
+    if (requestId !== latestFetchId)
+      return
 
     remoteData.value = records
   }
   catch (err) {
+    if (requestId !== latestFetchId)
+      return
+
     error.value = err instanceof Error ? err.message : '获取数据失败'
     remoteData.value = []
   }
   finally {
-    loading.value = false
-  }
-}
-
-async function fetchData() {
-  if (isRealtime.value) {
-    await fetchRecentData()
-  }
-  else {
-    await fetchHistoryData()
+    activeFetchCount = Math.max(0, activeFetchCount - 1)
+    if (requestId === latestFetchId) {
+      loading.value = false
+      isInitialLoad.value = false
+    }
   }
 }
 
@@ -813,7 +811,7 @@ const processChartOption = computed(() => ({
 
 // 使用 VueUse 的 useIntervalFn 自动管理定时器
 const { pause: pauseRealtimeUpdate, resume: resumeRealtimeUpdate } = useIntervalFn(
-  () => fetchData(),
+  () => void fetchData({ skipIfBusy: true }),
   dataUpdateInterval,
   { immediate: false },
 )
@@ -851,17 +849,21 @@ const blurClass = computed(() => {
 
 watch(selectedView, () => {
   isInitialLoad.value = true // 切换视图时重置首次加载状态
-  fetchData()
+  void fetchData()
 })
 
 watch(() => props.uuid, () => {
   remoteData.value = []
   isInitialLoad.value = true // 切换节点时重置首次加载状态
-  fetchData()
+  void fetchData()
 })
 
 onMounted(() => {
-  fetchData()
+  void fetchData()
+})
+
+onUnmounted(() => {
+  latestFetchId += 1
 })
 </script>
 

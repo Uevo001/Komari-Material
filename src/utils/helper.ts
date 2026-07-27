@@ -29,12 +29,36 @@ export interface ByteDecimalsConfig {
 }
 
 /** 默认字节精度配置 */
-const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
+const DEFAULT_BYTE_DECIMALS: Required<ByteDecimalsConfig> = {
   B: 0,
   KB: 0,
   MB: 1,
   GB: 1,
   TB: 2,
+}
+
+const MAX_BYTE_DECIMALS = 6
+
+function normalizeDecimals(value: unknown, fallback: number): number {
+  if (value === -1)
+    return -1
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MAX_BYTE_DECIMALS)
+    return value
+  return fallback
+}
+
+function normalizeByteDecimalsConfig(config?: ByteDecimalsConfig): Required<ByteDecimalsConfig> {
+  return {
+    B: normalizeDecimals(config?.B, DEFAULT_BYTE_DECIMALS.B),
+    KB: normalizeDecimals(config?.KB, DEFAULT_BYTE_DECIMALS.KB),
+    MB: normalizeDecimals(config?.MB, DEFAULT_BYTE_DECIMALS.MB),
+    GB: normalizeDecimals(config?.GB, DEFAULT_BYTE_DECIMALS.GB),
+    TB: normalizeDecimals(config?.TB, DEFAULT_BYTE_DECIMALS.TB),
+  }
+}
+
+function getByteUnitIndex(bytes: number): number {
+  return Math.min(BYTE_UNITS.length - 1, Math.max(0, Math.floor(Math.log(bytes) / Math.log(1024))))
 }
 
 /**
@@ -44,13 +68,14 @@ const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
  * @returns 格式化后的字符串，如 "1.5 GB"
  */
 export function formatBytes(bytes: number, decimals = 1): string {
-  if (bytes === 0)
+  if (!Number.isFinite(bytes) || bytes <= 0)
     return '0 B'
 
   const k = 1024
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  const i = getByteUnitIndex(bytes)
   const unit = BYTE_UNITS[i] ?? BYTE_UNITS[BYTE_UNITS.length - 1]
-  return `${(bytes / k ** i).toFixed(decimals)} ${unit}`
+  const safeDecimals = normalizeDecimals(decimals, 1)
+  return `${(bytes / k ** i).toFixed(safeDecimals === -1 ? 1 : safeDecimals)} ${unit}`
 }
 
 /**
@@ -60,9 +85,9 @@ export function formatBytes(bytes: number, decimals = 1): string {
  * @returns 格式化后的字符串，如 "1.5 GB"
  */
 export function formatBytesWithConfig(bytes: number, config?: ByteDecimalsConfig): string {
-  const mergedConfig = { ...DEFAULT_BYTE_DECIMALS, ...config }
+  const mergedConfig = normalizeByteDecimalsConfig(config)
 
-  if (bytes === 0) {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
     // 0 字节时，检查 B 是否被禁用
     if (mergedConfig.B === -1)
       return '0 KB'
@@ -70,7 +95,7 @@ export function formatBytesWithConfig(bytes: number, config?: ByteDecimalsConfig
   }
 
   const k = 1024
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  const i = getByteUnitIndex(bytes)
 
   // 获取对应单位的精度配置
   const unitKey = BYTE_UNITS[i]
@@ -103,16 +128,16 @@ export function formatBytesWithConfig(bytes: number, config?: ByteDecimalsConfig
  * @returns 分离的数值和单位，如 { value: "1.5", unit: "GB" }
  */
 export function formatBytesSplit(bytes: number, config?: ByteDecimalsConfig): { value: string, unit: string } {
-  const mergedConfig = { ...DEFAULT_BYTE_DECIMALS, ...config }
+  const mergedConfig = normalizeByteDecimalsConfig(config)
 
-  if (bytes === 0) {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
     if (mergedConfig.B === -1)
       return { value: '0', unit: 'KB' }
     return { value: '0', unit: 'B' }
   }
 
   const k = 1024
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  const i = getByteUnitIndex(bytes)
 
   const unitKey = BYTE_UNITS[i]
   const decimals = (unitKey === 'TB' || unitKey === 'PB') ? mergedConfig.TB : mergedConfig[unitKey as keyof ByteDecimalsConfig]

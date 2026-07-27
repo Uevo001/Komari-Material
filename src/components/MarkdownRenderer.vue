@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { sanitizeNavigationUrl } from '@/utils/urlHelper'
 
 const props = defineProps<{
   content: string
@@ -22,14 +23,22 @@ function parseMarkdown(text: string): Token[] {
   while (remaining.length > 0) {
     const imageMatch = remaining.match(/^!\[([^\]]*)\]\(([^)]+)\)/)
     if (imageMatch) {
-      tokens.push({ type: 'image', alt: imageMatch[1], url: imageMatch[2] })
+      const url = sanitizeNavigationUrl(imageMatch[2])
+      tokens.push(url
+        ? { type: 'image', alt: imageMatch[1], url }
+        : { type: 'text', content: imageMatch[0] },
+      )
       remaining = remaining.slice(imageMatch[0].length)
       continue
     }
 
     const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/)
     if (linkMatch) {
-      tokens.push({ type: 'link', content: linkMatch[1], url: linkMatch[2] })
+      const url = sanitizeNavigationUrl(linkMatch[2])
+      tokens.push(url
+        ? { type: 'link', content: linkMatch[1], url }
+        : { type: 'text', content: linkMatch[0] },
+      )
       remaining = remaining.slice(linkMatch[0].length)
       continue
     }

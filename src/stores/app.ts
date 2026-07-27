@@ -408,7 +408,7 @@ const useAppStore = defineStore('app', () => {
     // 解析各个单位的精度配置
     const parseDecimal = (key: string): number | undefined => {
       const value = settings[key]
-      if (typeof value === 'number' && Number.isInteger(value)) {
+      if (value === -1 || (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 6)) {
         return value
       }
       return undefined

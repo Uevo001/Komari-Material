@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
-import { computed, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import VChart from 'vue-echarts'
 import { useAppStore } from '@/stores/app'
 import { cutPeakValues, interpolateNullsLinear } from '@/utils/recordHelper'
@@ -50,7 +50,7 @@ const chartColors = new Proxy([] as string[], {
 })
 
 // 从 publicSettings 获取记录保留时间
-const maxPingRecordPreserveTime = computed(() => appStore.publicSettings?.ping_record_preserve_time || 168)
+const maxPingRecordPreserveTime = computed(() => appStore.publicSettings?.ping_record_preserve_time ?? 168)
 
 // 视图选项
 const presetViews = [
@@ -98,8 +98,8 @@ const selectedHours = computed(() => {
 // 初始化默认视图
 watch(availableViews, (views) => {
   const firstView = views[0]
-  if (firstView && !selectedView.value) {
-    selectedView.value = firstView.label
+  if (!views.some(view => view.label === selectedView.value)) {
+    selectedView.value = firstView?.label ?? ''
   }
 }, { immediate: true })
 
@@ -141,6 +141,7 @@ const remoteData = shallowRef<PingRecord[]>([])
 const tasks = shallowRef<TaskInfo[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+let latestFetchId = 0
 
 // 任务选择
 const selectedTaskIds = ref<number[]>([])
@@ -151,21 +152,32 @@ const chartMargin = { top: 12, right: 24, bottom: 52, left: 56 }
 // ==================== 数据获取 ====================
 
 async function fetchRecords() {
-  if (!props.uuid)
+  const requestId = ++latestFetchId
+  if (!props.uuid || maxPingRecordPreserveTime.value <= 0) {
+    remoteData.value = []
+    tasks.value = []
+    loading.value = false
+    error.value = null
     return
+  }
 
+  const uuid = props.uuid
+  const hours = selectedHours.value
   loading.value = true
   error.value = null
 
   try {
     const result = await rpc.getClient().call<PingRecordsResponse>('common:getRecords', {
-      uuid: props.uuid,
+      uuid,
       type: 'ping',
-      hours: selectedHours.value,
+      hours,
     })
 
-    const records = result?.records || []
-    records.sort((a, b) => dayjs(a.time).valueOf() - dayjs(b.time).valueOf())
+    if (requestId !== latestFetchId)
+      return
+
+    const records = [...(result?.records || [])]
+      .sort((a, b) => dayjs(a.time).valueOf() - dayjs(b.time).valueOf())
 
     remoteData.value = records
     tasks.value = result?.tasks || []
@@ -175,12 +187,17 @@ async function fetchRecords() {
     }
   }
   catch (err) {
+    if (requestId !== latestFetchId)
+      return
+
     error.value = err instanceof Error ? err.message : '获取数据失败'
     remoteData.value = []
     tasks.value = []
   }
   finally {
-    loading.value = false
+    if (requestId === latestFetchId) {
+      loading.value = false
+    }
   }
 }
 
@@ -527,14 +544,14 @@ const pingChartOption = computed(() => {
 
 watch(selectedView, () => {
   selectedTaskIds.value = []
-  fetchRecords()
+  void fetchRecords()
 })
 
 watch(() => props.uuid, () => {
   remoteData.value = []
   tasks.value = []
   selectedTaskIds.value = []
-  fetchRecords()
+  void fetchRecords()
 })
 
 onMounted(() => {
@@ -542,7 +559,11 @@ onMounted(() => {
   if (firstView && !selectedView.value) {
     selectedView.value = firstView.label
   }
-  fetchRecords()
+  void fetchRecords()
+})
+
+onUnmounted(() => {
+  latestFetchId += 1
 })
 
 // 是否启用模糊背景

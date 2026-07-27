@@ -43,8 +43,10 @@ class InitManager {
   private appStore: ReturnType<typeof useAppStore>
   private nodesStore: ReturnType<typeof useNodesStore>
   private pollTimer: ReturnType<typeof setInterval> | null = null
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private isPolling = false
   private isInitialized = false
+  private isDestroyed = false
   private useWebSocket: boolean | null = null // 根据主题配置决定
   private postFailureCount = 0
   /**
@@ -70,8 +72,7 @@ class InitManager {
       return this.config.wsActivePollInterval
     }
 
-    const settings = this.appStore.publicSettings?.theme_settings
-    const interval = settings?.dataUpdateInterval
+    const interval = this.appStore.themeSettings.dataUpdateInterval
     // 确保值在合理范围内（1-60秒）
     if (typeof interval === 'number' && interval >= 1 && interval <= 60) {
       return interval * 1000 // 转换为毫秒
@@ -88,6 +89,8 @@ class InitManager {
       return
     }
 
+    this.isDestroyed = false
+
     try {
       // 健康检查与首屏数据并行，避免公开站点额外等待一次网络往返。
       // allSettled 同时避免私有站点的数据请求在 401 时产生未处理的拒绝。
@@ -95,6 +98,10 @@ class InitManager {
         this.healthCheck(),
         this.fetchBootstrapData(),
       ])
+
+      if (this.isDestroyed) {
+        return
+      }
 
       if (healthResult.status === 'rejected') {
         throw healthResult.reason
@@ -131,7 +138,7 @@ class InitManager {
    */
   private async healthCheck(): Promise<void> {
     try {
-      const result = await this.rpc.ping()
+      const result = await this.rpc.ping(this.config.healthCheckTimeout)
       if (result !== 'pong') {
         throw new RpcError(-32000, 'Unexpected health check response')
       }
@@ -300,7 +307,7 @@ class InitManager {
    */
   private async connectWebSocket(): Promise<void> {
     // 如果已回落到 POST 模式或配置为 HTTP 模式，不再尝试 WebSocket
-    if (this.useWebSocket === false) {
+    if (this.useWebSocket !== true) {
       return
     }
 
@@ -313,8 +320,15 @@ class InitManager {
     try {
       // 使用 ping 验证连接，10 秒超时
       await client.ensureWebSocketConnectedWithPing(10000)
+      if (this.isDestroyed || this.useWebSocket !== true) {
+        client.close()
+        return
+      }
+
+      this.clearReconnectTimer()
       this.nodesStore.updateWsState('connected', 0)
       this.setWsActive(true)
+      this.postFailureCount = 0
 
       // 连接成功，重置错误状态
       this.appStore.connectionError = false
@@ -323,6 +337,10 @@ class InitManager {
       this.monitorWebSocketConnection()
     }
     catch (error) {
+      if (this.isDestroyed || this.useWebSocket !== true) {
+        return
+      }
+
       console.error('[InitManager] WebSocket connection failed:', error)
       this.nodesStore.updateWsState('disconnected')
       this.setWsActive(false)
@@ -359,6 +377,10 @@ class InitManager {
    * 安排重连
    */
   private scheduleReconnect(): void {
+    if (this.reconnectTimer || this.useWebSocket !== true) {
+      return
+    }
+
     const attempts = this.nodesStore.wsReconnectAttempts
 
     // 达到最大重连次数，回落到 POST 模式
@@ -375,23 +397,30 @@ class InitManager {
 
     this.nodesStore.updateWsState('reconnecting', attempts + 1)
 
-    setTimeout(async () => {
-      try {
-        const client = this.rpc.getClient()
-        client.close()
-        await this.connectWebSocket()
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null
+      if (this.useWebSocket !== true) {
+        return
       }
-      catch (error) {
-        console.error('[InitManager] Reconnect failed:', error)
-        this.scheduleReconnect()
-      }
+
+      const client = this.rpc.getClient()
+      client.close()
+      void this.connectWebSocket()
     }, this.config.wsReconnectInterval)
+  }
+
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
   }
 
   /**
    * 回落到 POST 模式
    */
   private fallbackToPostMode(): void {
+    this.clearReconnectTimer()
     this.useWebSocket = false
     this.setWsActive(false)
     this.nodesStore.updateWsState('disconnected', this.config.wsMaxReconnectAttempts)
@@ -458,6 +487,10 @@ class InitManager {
         this.rpc.getNodesLatestStatus() as Promise<Record<string, NodeStatus>>,
       ])
 
+      if (this.isDestroyed) {
+        return
+      }
+
       // 更新节点信息（会智能合并，不会重建数组）
       this.nodesStore.updateNodeClients(clientsResult)
 
@@ -465,6 +498,7 @@ class InitManager {
       this.nodesStore.updateNodeStatuses(statusesResult)
 
       // 连接恢复正常，重置错误状态
+      this.postFailureCount = 0
       this.appStore.connectionError = false
     }
     catch (error) {
@@ -475,8 +509,10 @@ class InitManager {
         console.error('[InitManager] Poll error:', error)
       }
 
-      // 一次失败就显示错误
-      this.appStore.connectionError = true
+      this.postFailureCount += 1
+      if (this.postFailureCount >= this.config.postFailureThreshold) {
+        this.appStore.connectionError = true
+      }
     }
     finally {
       this.isPolling = false
@@ -498,6 +534,7 @@ class InitManager {
    * 断开现有连接，重置状态，重新建立连接
    */
   async reconnectAfterLogin(): Promise<void> {
+    this.clearReconnectTimer()
     const client = this.rpc.getClient()
 
     // 关闭现有 WebSocket 连接
@@ -514,14 +551,27 @@ class InitManager {
     // 重新获取用户信息
     await this.fetchUserInfo()
 
-    // 重新建立 WebSocket 连接（如果配置为 websocket 模式）
-    this.connectWebSocket()
+    if (this.isDestroyed) {
+      return
+    }
+
+    if (this.useWebSocket) {
+      void this.connectWebSocket()
+    }
+    else {
+      client.setTransport(false)
+    }
   }
 
   /**
    * 销毁管理器
    */
   destroy(): void {
+    this.isDestroyed = true
+    this.clearReconnectTimer()
+    this.useWebSocket = false
+    this.wsActive = false
+    this.postFailureCount = 0
     this.stopPolling()
     this.rpc.close()
     this.nodesStore.clearNodes()

@@ -3,6 +3,7 @@ import type { VersionInfo } from '@/utils/api'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { getSharedApi } from '@/utils/api'
+import { sanitizeNavigationUrl } from '@/utils/urlHelper'
 
 const appStore = useAppStore()
 const api = getSharedApi()
@@ -49,6 +50,8 @@ const containerStyle = computed(() =>
 const showIcp = computed(() => appStore.icpEnabled && appStore.icpNumber)
 const showPolice = computed(() => appStore.policeEnabled && appStore.policeNumber)
 const showFiling = computed(() => showIcp.value || showPolice.value)
+const safeIcpUrl = computed(() => sanitizeNavigationUrl(appStore.icpUrl))
+const safePoliceUrl = computed(() => sanitizeNavigationUrl(appStore.policeUrl))
 const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.cardBlurRadius > 0)
 </script>
 
@@ -70,11 +73,12 @@ const hasBackgroundBlur = computed(() => appStore.backgroundEnabled && appStore.
       </div>
 
       <div v-if="showFiling" class="material-footer__filing">
-        <a v-if="showIcp" :href="appStore.icpUrl" target="_blank" rel="noopener noreferrer">
+        <a v-if="showIcp && safeIcpUrl" :href="safeIcpUrl" target="_blank" rel="noopener noreferrer">
           {{ appStore.icpNumber }}
         </a>
+        <span v-else-if="showIcp">{{ appStore.icpNumber }}</span>
         <span v-if="showIcp && showPolice">|</span>
-        <a v-if="showPolice && appStore.policeUrl" :href="appStore.policeUrl" target="_blank" rel="noopener noreferrer">
+        <a v-if="showPolice && safePoliceUrl" :href="safePoliceUrl" target="_blank" rel="noopener noreferrer">
           {{ appStore.policeNumber }}
         </a>
         <span v-else-if="showPolice">{{ appStore.policeNumber }}</span>
