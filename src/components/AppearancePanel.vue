@@ -40,16 +40,6 @@ const cardSurfaceOptions: Array<{ value: CardSurfaceStyle, label: string, icon: 
   { value: 'translucent', label: '半透明', icon: 'blur_on' },
 ]
 
-const paletteLabels: Record<MonetPaletteName, string> = {
-  'material-teal': '湖青',
-  'ocean-blue': '海蓝',
-  'forest-green': '森绿',
-  'sunset-orange': '落日',
-  'rose-pink': '蔷薇',
-  'violet-purple': '堇紫',
-  'slate-gray': '石板',
-}
-
 const selectedPalette = computed<MonetPaletteName>(() => {
   const value = appStore.themeSettings.monetPalette
   if (typeof value === 'string' && value in MONET_PALETTES) {
@@ -60,9 +50,18 @@ const selectedPalette = computed<MonetPaletteName>(() => {
 
 const paletteOptions = computed(() => {
   return Object.entries(MONET_PALETTES).map(([key, palette]) => {
-    const tokens = buildMaterialThemeTokens(
+    const lightTokens = buildMaterialThemeTokens(
       palette.seedColor,
-      appStore.isDark,
+      false,
+      appStore.materialDensity,
+      {
+        fontFamily: appStore.fontFamily,
+        numberFontFamily: appStore.numberFontFamily,
+      },
+    )
+    const darkTokens = buildMaterialThemeTokens(
+      palette.seedColor,
+      true,
       appStore.materialDensity,
       {
         fontFamily: appStore.fontFamily,
@@ -71,12 +70,11 @@ const paletteOptions = computed(() => {
     )
     return {
       key: key as MonetPaletteName,
-      label: paletteLabels[key as MonetPaletteName],
-      seedColor: palette.seedColor,
+      name: palette.name,
       swatches: [
-        tokens.colors.primary!,
-        tokens.colors.secondary!,
-        tokens.colors.tertiary!,
+        lightTokens.colors.primary!,
+        darkTokens.colors.primary!,
+        lightTokens.colors.tertiary!,
       ],
     }
   })
@@ -247,7 +245,6 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
         <section class="appearance-group">
           <div class="appearance-group__header">
             <h3>主题模式</h3>
-            <p>当前生效色 {{ appStore.materialSeedColor }}</p>
           </div>
           <div class="appearance-segmented" role="radiogroup" aria-label="主题模式">
             <button
@@ -268,8 +265,10 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
 
         <section class="appearance-group">
           <div class="appearance-group__header">
-            <h3>莫奈取色</h3>
-            <p>{{ wallpaperStatus }}</p>
+            <h3>主题配色</h3>
+            <p v-if="appStore.monetColorMode === 'wallpaper'">
+              {{ wallpaperStatus }}
+            </p>
           </div>
           <div class="appearance-segmented" role="radiogroup" aria-label="莫奈取色模式">
             <button
@@ -305,8 +304,8 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
               :class="{ 'is-active': selectedPalette === palette.key }"
               role="radio"
               :aria-checked="selectedPalette === palette.key"
+              :aria-label="`使用${palette.name}主题色`"
               type="button"
-              :title="palette.seedColor"
               @click="setPalette(palette.key)"
             >
               <span class="appearance-palette__swatches">
@@ -317,7 +316,6 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
                   :style="{ backgroundColor: color }"
                 />
               </span>
-              <span class="appearance-palette__label">{{ palette.label }}</span>
             </button>
           </div>
         </section>
@@ -862,24 +860,34 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
 
 .appearance-palette-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .appearance-palette {
-  display: grid;
-  min-height: 48px;
-  grid-template-columns: 32px minmax(0, 1fr);
-  grid-template-areas: 'swatch label';
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 8px;
-  padding: 5px 7px;
-  color: var(--md-sys-color-on-surface);
-  background: var(--md-sys-color-surface-container-low);
-  text-align: left;
+  position: relative;
+  display: block;
+  min-width: 0;
+  aspect-ratio: 1;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 4px;
+  background: transparent;
   cursor: pointer;
+  outline: none;
+  transition:
+    border-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    background-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    transform var(--md-app-motion-duration-short) var(--md-app-motion-easing-emphasized);
+
+  &:hover {
+    background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+    transform: scale(1.04);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px var(--md-sys-color-secondary-container);
+  }
 
   &.is-active {
     border-color: var(--md-sys-color-primary);
@@ -888,29 +896,20 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
 }
 
 .appearance-palette__swatches {
-  grid-area: swatch;
-  display: flex;
+  display: grid;
   overflow: hidden;
-  width: 32px;
-  height: 26px;
-  border-radius: 6px;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: 3fr 2fr;
+  grid-template-rows: repeat(2, 1fr);
+  border-radius: 11px;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-sys-color-outline) 32%, transparent);
 }
 
 .appearance-palette__swatch {
-  flex: 1;
-}
-
-.appearance-palette__label {
-  grid-area: label;
-  overflow: hidden;
-  font-family: var(--md-sys-typescale-label-medium-font);
-  font-size: var(--md-sys-typescale-label-medium-size);
-  font-weight: var(--md-sys-typescale-label-medium-weight);
-  line-height: var(--md-sys-typescale-label-medium-line-height);
-  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  &:first-child {
+    grid-row: 1 / -1;
+  }
 }
 
 .appearance-range {
@@ -1067,7 +1066,8 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   }
 
   .appearance-palette-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .appearance-segmented__button {

@@ -11,33 +11,77 @@ export type MonetColorMode = 'seed' | 'palette' | 'wallpaper'
 export type MonetPaletteName = keyof typeof MONET_PALETTES
 
 export const MONET_PALETTES = {
-  'material-teal': {
-    name: 'Material Teal',
-    seedColor: DEFAULT_MATERIAL_SEED_COLOR,
-  },
-  'ocean-blue': {
-    name: 'Ocean Blue',
-    seedColor: '#006CBA',
-  },
-  'forest-green': {
-    name: 'Forest Green',
-    seedColor: '#386A20',
+  'coral-red': {
+    name: '珊瑚红',
+    seedColor: '#B3261E',
   },
   'sunset-orange': {
-    name: 'Sunset Orange',
+    name: '落日橙',
     seedColor: '#A23F00',
   },
-  'rose-pink': {
-    name: 'Rose Pink',
-    seedColor: '#B71B5C',
+  'amber-gold': {
+    name: '琥珀',
+    seedColor: '#825500',
+  },
+  'olive-green': {
+    name: '金黄',
+    seedColor: '#6D5E00',
+  },
+  'lime-green': {
+    name: '青柠',
+    seedColor: '#496900',
+  },
+  'forest-green': {
+    name: '森绿',
+    seedColor: '#146C2E',
+  },
+  'material-teal': {
+    name: '湖青',
+    seedColor: DEFAULT_MATERIAL_SEED_COLOR,
+  },
+  'sky-blue': {
+    name: '天青',
+    seedColor: '#00677D',
+  },
+  'ocean-blue': {
+    name: '海蓝',
+    seedColor: '#005AC1',
+  },
+  'indigo-blue': {
+    name: '靛蓝',
+    seedColor: '#3F51A2',
+  },
+  'material-purple': {
+    name: '经典紫',
+    seedColor: '#6750A4',
   },
   'violet-purple': {
-    name: 'Violet Purple',
-    seedColor: '#6B4EA0',
+    name: '堇紫',
+    seedColor: '#7D4698',
+  },
+  'magenta-pink': {
+    name: '洋红',
+    seedColor: '#9C3E7C',
+  },
+  'rose-pink': {
+    name: '蔷薇',
+    seedColor: '#B71B5C',
+  },
+  'plum-purple': {
+    name: '李紫',
+    seedColor: '#8C4A60',
+  },
+  'earth-brown': {
+    name: '大地棕',
+    seedColor: '#765849',
   },
   'slate-gray': {
-    name: 'Slate Gray',
-    seedColor: '#5D6C7A',
+    name: '石板灰',
+    seedColor: '#4F616D',
+  },
+  'graphite-gray': {
+    name: '石墨灰',
+    seedColor: '#5F5E62',
   },
 } as const
 
