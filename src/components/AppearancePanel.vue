@@ -233,6 +233,10 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
     </div>
 
     <div class="appearance-tab-content">
+      <p v-if="appStore.isAppearanceAdmin" class="appearance-admin-hint">
+        <span class="material-symbols-rounded">manage_accounts</span>
+        <span>管理员模式：你的改动将写入后台并全站生效。</span>
+      </p>
       <div
         v-if="activeTab === 'theme'"
         id="appearance-panel-theme"
@@ -485,9 +489,9 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
     </div>
 
     <footer class="appearance-panel__footer">
-      <button class="appearance-reset-button" type="button" :disabled="!appStore.hasAppearanceOverrides" @click="appStore.resetAppearanceSettings()">
+      <button class="appearance-reset-button" type="button" :disabled="appStore.isAppearanceAdmin ? false : !appStore.hasAppearanceOverrides" @click="appStore.resetAppearanceSettings()">
         <span class="material-symbols-rounded">restart_alt</span>
-        <span>恢复后台外观</span>
+        <span>{{ appStore.isAppearanceAdmin ? '恢复默认（全站）' : '恢复后台外观' }}</span>
       </button>
     </footer>
   </div>
@@ -584,6 +588,25 @@ function handleTabKeydown(event: KeyboardEvent, currentIndex: number) {
   min-width: 0;
   overflow: visible;
   padding: 20px 2px 16px;
+}
+
+.appearance-admin-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+
+  .material-symbols-rounded {
+    font-size: 20px;
+  }
 }
 
 .appearance-tab-panel {

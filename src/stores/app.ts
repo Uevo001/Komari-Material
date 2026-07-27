@@ -4,6 +4,7 @@ import type { MaterialDensity, MonetColorMode } from '@/utils/materialTheme'
 import { usePreferredDark, useStorageAsync } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
+import { ApiError, getSharedApi } from '@/utils/api'
 import {
   buildMaterialThemeTokens,
   DEFAULT_MATERIAL_SEED_COLOR,
@@ -75,6 +76,24 @@ function normalizeFontFamily(value: unknown, fallback: string): string {
     : value.trim()
 }
 
+/** 稳定序列化，保证对象键顺序不影响签名结果 */
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value))
+    return `[${value.map(stableStringify).join(',')}]`
+
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>
+    return `{${Object.keys(record).sort().map(key => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(',')}}`
+  }
+
+  return JSON.stringify(value)
+}
+
+/** 计算后台 theme_settings 的签名，用于检测后台配置是否变更 */
+function getManagedSettingsSignature(input: unknown): string {
+  return stableStringify(input ?? {})
+}
+
 const useAppStore = defineStore('app', () => {
   const loading = ref<boolean>(true)
 
@@ -85,6 +104,10 @@ const useAppStore = defineStore('app', () => {
   const userInfo = ref<MeInfo>()
   const nodeSelectedGroup = useStorageAsync<string>('nodeSelectedGroup', 'all', localStorage)
   const appearanceSettingsOverrides = useStorageAsync<AppearanceSettingsOverrides>('appearanceSettingsOverrides', {}, localStorage)
+  // 访客本地覆盖写入时记录的后台 theme_settings 签名，用于后台变更时自动失效本地覆盖
+  const localOverrideBaseSignature = useStorageAsync<string | null>('appearanceOverrideBaseSignature', null, localStorage)
+  // 当前后台 theme_settings 的签名（由 publicSettings 派生）
+  const managedSettingsSignature = ref<string>('')
   const isLoggedIn = ref<boolean>(false)
   const connectionError = ref<boolean>(false)
   const requireLogin = ref<boolean>(false)
@@ -521,8 +544,24 @@ const useAppStore = defineStore('app', () => {
     return 0
   })
 
-  // 当 publicSettings 加载后，如果 localStorage 没有保存过视图模式或值为非法值，使用默认值
+  // 当 publicSettings 加载后：1) 视图模式回填默认值 2) 后台 theme_settings 变更时自动失效访客本地覆盖
   watch(publicSettings, (settings) => {
+    const rawThemeSettings = (settings?.theme_settings ?? {}) as Record<string, unknown>
+    const nextSignature = getManagedSettingsSignature(rawThemeSettings)
+    managedSettingsSignature.value = nextSignature
+
+    // 仅当后台有配置、本地有覆盖、且签名与访客写入时不一致 -> 清空本地覆盖
+    // 避免访客旧设置覆盖管理员的新意图；后台为空时不触发，避免管理员刚清空后台时误清
+    if (
+      Object.keys(rawThemeSettings).length > 0
+      && Object.keys(appearanceSettingsOverrides.value).length > 0
+      && localOverrideBaseSignature.value !== null
+      && localOverrideBaseSignature.value !== nextSignature
+    ) {
+      appearanceSettingsOverrides.value = {}
+      localOverrideBaseSignature.value = null
+    }
+
     if (settings && !isValidViewMode(storedViewMode.value)) {
       // 触发 computed setter，会自动保存到 localStorage
       storedViewMode.value = defaultViewMode.value
@@ -609,24 +648,118 @@ const useAppStore = defineStore('app', () => {
 
   const hasAppearanceOverrides = computed(() => Object.keys(appearanceSettingsOverrides.value).length > 0)
 
+  // 登录用户视为管理员，外观改动回写后台；否则只写本地覆盖
+  const isAppearanceAdmin = computed(() => isLoggedIn.value)
+
+  // 管理员回写后台的串行队列状态：连续改动合并入队，前一个请求完成才发下一个
+  let queuedSave: Record<string, unknown> | null = null
+  let isSaving = false
+
+  /**
+   * 管理员态回写后台 theme_settings
+   * @param patch 待合并的增量（merge 模式）或整体替换值（replace 模式）
+   * @param mode merge=与现有后台配置合并；replace=整体替换（用于清空）
+   */
+  async function persistManagedSettings(
+    patch: Record<string, unknown>,
+    mode: 'merge' | 'replace' = 'merge',
+  ) {
+    const currentRaw = (publicSettings.value?.theme_settings ?? {}) as Record<string, unknown>
+    const nextRaw = mode === 'replace' ? { ...patch } : { ...currentRaw, ...patch }
+    queuedSave = nextRaw
+
+    if (isSaving)
+      return
+
+    isSaving = true
+    try {
+      while (queuedSave) {
+        const value = queuedSave
+        queuedSave = null
+        try {
+          await getSharedApi().updateSettings({ theme_settings: value })
+          // 回写成功后同步本地 publicSettings，让 themeSettings computed 立即反映
+          if (publicSettings.value) {
+            publicSettings.value = {
+              ...publicSettings.value,
+              theme_settings: value,
+            }
+          }
+          // 同步签名，避免下一次拉取时误判本地覆盖失效
+          managedSettingsSignature.value = getManagedSettingsSignature(value)
+        }
+        catch (error) {
+          // 401/403：非管理员或会话失效，静默回落到本地覆盖
+          if (error instanceof ApiError && (error.code === 401 || error.code === 403)) {
+            if (mode === 'replace' && Object.keys(patch).length === 0) {
+              // 清空场景的回落：清掉本地覆盖
+              appearanceSettingsOverrides.value = {}
+              localOverrideBaseSignature.value = null
+            }
+            else {
+              appearanceSettingsOverrides.value = {
+                ...appearanceSettingsOverrides.value,
+                ...patch,
+              }
+              localOverrideBaseSignature.value = managedSettingsSignature.value
+            }
+          }
+          else {
+            console.error('[appStore] 保存主题设置失败:', error)
+          }
+          break // 出错后停止队列，避免错误级联
+        }
+      }
+    }
+    finally {
+      isSaving = false
+    }
+  }
+
   function updateAppearanceSetting<K extends keyof AppearanceSettingsOverrides>(
     key: K,
     value: AppearanceSettingsOverrides[K],
   ) {
+    const patch = { [key]: value } as Record<string, unknown>
+
+    if (isAppearanceAdmin.value) {
+      // 管理员：回写后台，全站生效
+      persistManagedSettings(patch)
+      return
+    }
+
+    // 访客：写本地覆盖，并记录当前后台签名
     appearanceSettingsOverrides.value = {
       ...appearanceSettingsOverrides.value,
       [key]: value,
     }
+    localOverrideBaseSignature.value = managedSettingsSignature.value
   }
 
   function clearAppearanceSetting(key: keyof AppearanceSettingsOverrides) {
+    if (isAppearanceAdmin.value) {
+      // 管理员：从后台 theme_settings 中移除该 key（用 replace 模式发送剔除后的完整对象）
+      const currentRaw = { ...((publicSettings.value?.theme_settings ?? {}) as Record<string, unknown>) }
+      delete currentRaw[key]
+      persistManagedSettings(currentRaw, 'replace')
+      return
+    }
+
     const nextSettings = { ...appearanceSettingsOverrides.value }
     delete nextSettings[key]
     appearanceSettingsOverrides.value = nextSettings
   }
 
   function resetAppearanceSettings() {
+    if (isAppearanceAdmin.value) {
+      // 管理员：清空后台 theme_settings，全站回到 manifest 默认
+      persistManagedSettings({}, 'replace')
+      return
+    }
+
+    // 访客：清本地覆盖
     appearanceSettingsOverrides.value = {}
+    localOverrideBaseSignature.value = null
   }
 
   function updateThemeMode(mode?: ThemeMode) {
@@ -673,6 +806,7 @@ const useAppStore = defineStore('app', () => {
     themeSettings,
     appearanceSettingsOverrides,
     hasAppearanceOverrides,
+    isAppearanceAdmin,
     manualMaterialSeedColor,
     monetColorMode,
     monetPaletteSeedColor,

@@ -361,6 +361,43 @@ export class KomariApi {
   }
 
   /**
+   * 更新站点设置（管理员接口）
+   * 仅登录管理员可调用，非管理员或会话失效会被后端 401/403 拒绝。
+   * 调用方据此静默回落到本地覆盖。
+   * @param settings 完整的 settings 对象，至少包含 theme_settings
+   */
+  async updateSettings(settings: Record<string, unknown>): Promise<void> {
+    const url = `${this.baseUrl}/admin/settings`
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout)
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // 携带 Cookie
+        body: JSON.stringify(settings),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        // 401/403 等通过状态码抛出，调用方据此回落本地覆盖
+        throw new ApiError(`HTTP error: ${response.status}`, 'error', response.status)
+      }
+    }
+    catch (error) {
+      clearTimeout(timeoutId)
+      if (error instanceof ApiError)
+        throw error
+      throw new ApiError(`Network error: ${error instanceof Error ? error.message : String(error)}`, 'error')
+    }
+  }
+
+  /**
    * 获取服务端版本信息
    */
   async getVersion(): Promise<VersionInfo> {
