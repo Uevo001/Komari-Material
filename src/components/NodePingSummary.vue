@@ -55,13 +55,13 @@ const pingStatsEnabled = computed(() => {
 
 const { stats, loading, error } = nodePingStore.useStats(
   () => props.uuid,
-  () => pingStatsEnabled.value,
+  { hours: () => 1, enabled: () => pingStatsEnabled.value },
 )
 
 function latencyTone(value: number): PingTone {
   if (value <= 60)
     return 'good'
-  if (value <= 120)
+  if (value <= 100)
     return 'ok'
   if (value <= 200)
     return 'warning'
@@ -73,7 +73,7 @@ function lossTone(value: number): PingTone {
     return 'good'
   if (value <= 3)
     return 'ok'
-  if (value <= 8)
+  if (value <= 9)
     return 'warning'
   return 'error'
 }
@@ -201,8 +201,12 @@ const latencyTitle = computed(() => {
 })
 
 const lossTitle = computed(() => {
-  if (stats.value.hasData)
-    return `平均丢包 ${stats.value.avgLoss.toFixed(1)}%`
+  if (stats.value.hasData) {
+    const volatility = stats.value.avgVolatility > 0
+      ? `,平均波动 ${stats.value.avgVolatility.toFixed(2)}`
+      : ''
+    return `平均丢包 ${stats.value.avgLoss.toFixed(1)}%${volatility}`
+  }
   return getEmptyTitle('loss')
 })
 
