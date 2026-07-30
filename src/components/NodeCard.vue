@@ -264,7 +264,6 @@ function openPingChart() {
             <span class="md-number">{{ showTrafficProgress ? `${trafficUsedPercentage.toFixed(1)}%` : '∞' }}</span>
           </div>
           <TrafficProgress
-            :height="4"
             :upload="props.node.net_total_up ?? 0"
             :download="props.node.net_total_down ?? 0"
             :traffic-limit="props.node.traffic_limit"

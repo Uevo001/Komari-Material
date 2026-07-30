@@ -174,8 +174,8 @@ const railColor = computed(() => 'var(--md-sys-color-surface-container-highest)'
     position: relative;
     display: flex;
     overflow: hidden;
-    height: 4px;
-    border-radius: var(--md-sys-shape-corner-none);
+    height: 6px;
+    border-radius: 999px;
     background: var(--md-sys-color-surface-container-highest);
     transition: background-color 250ms cubic-bezier(0.4, 0, 0.6, 1);
   }
@@ -189,8 +189,8 @@ const railColor = computed(() => 'var(--md-sys-color-surface-container-highest)'
       background-color 250ms cubic-bezier(0.4, 0, 0.6, 1);
 
     &--last {
-      border-top-right-radius: var(--md-sys-shape-corner-none);
-      border-bottom-right-radius: var(--md-sys-shape-corner-none);
+      border-top-right-radius: 999px;
+      border-bottom-right-radius: 999px;
     }
   }
 

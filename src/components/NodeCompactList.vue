@@ -280,7 +280,6 @@ function diskPercent(node: NodeData) {
               :download="node.net_total_down ?? 0"
               :traffic-limit="node.traffic_limit"
               :traffic-limit-type="(node.traffic_limit_type || 'sum')"
-              height="5px"
             />
             <span class="node-compact-card__hint md-number">
               {{ formatBytes(getTrafficUsed(node)) }} /

@@ -353,10 +353,10 @@ img {
   display: block;
   width: 100%;
   min-width: 0;
-  --md-linear-progress-active-indicator-height: 4px;
+  --md-linear-progress-active-indicator-height: 6px;
   --md-linear-progress-track-color: var(--md-sys-color-surface-container-highest);
-  --md-linear-progress-track-height: 4px;
-  --md-linear-progress-track-shape: var(--md-sys-shape-corner-none);
+  --md-linear-progress-track-height: 6px;
+  --md-linear-progress-track-shape: 999px;
 }
 
 .md-wavy-divider {
