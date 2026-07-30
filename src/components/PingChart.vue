@@ -89,7 +89,7 @@ const availableViews = computed(() => {
 })
 
 // 当前选中的视图
-const selectedView = ref<string>('')
+const selectedView = ref<string>('1 天')
 const selectedHours = computed(() => {
   const view = availableViews.value.find(v => v.label === selectedView.value)
   return view?.hours || 1
@@ -136,6 +136,105 @@ interface PingRecordsResponse {
   to?: string
 }
 
+const denseWindowHours = 24
+
+function getPercentile(values: number[], percentile: number): number {
+  if (values.length === 0)
+    return 0
+
+  const sortedValues = [...values].sort((a, b) => a - b)
+  const position = (sortedValues.length - 1) * percentile
+  const lowerIndex = Math.floor(position)
+  const upperIndex = Math.ceil(position)
+  const lowerValue = sortedValues[lowerIndex]!
+  const upperValue = sortedValues[upperIndex]!
+  return Math.round(lowerValue + (upperValue - lowerValue) * (position - lowerIndex))
+}
+
+function summarizeTasks(taskInfo: TaskInfo[], records: PingRecord[]): TaskInfo[] {
+  return taskInfo.map((task) => {
+    const taskRecords = records.filter(record => record.task_id === task.id)
+    const validValues = taskRecords
+      .filter(record => record.value >= 0)
+      .map(record => record.value)
+    const p50 = getPercentile(validValues, 0.5)
+    const p99 = getPercentile(validValues, 0.99)
+    const adjustedBase = Math.max(Math.min(p50, 50), 10)
+    let latest = -1
+    for (let index = taskRecords.length - 1; index >= 0; index--) {
+      const record = taskRecords[index]
+      if (record && record.value >= 0) {
+        latest = record.value
+        break
+      }
+    }
+
+    return {
+      ...task,
+      loss: taskRecords.length > 0
+        ? taskRecords.filter(record => record.value < 0).length / taskRecords.length * 100
+        : 0,
+      min: validValues.length > 0 ? Math.min(...validValues) : 0,
+      max: validValues.length > 0 ? Math.max(...validValues) : 0,
+      avg: validValues.length > 0
+        ? Math.trunc(validValues.reduce((sum, value) => sum + value, 0) / validValues.length)
+        : 0,
+      latest,
+      total: taskRecords.length,
+      p50,
+      p99,
+      p99_p50_ratio: p50 > 0 && p99 >= p50 ? (p99 - p50) / adjustedBase : 0,
+    }
+  })
+}
+
+async function fetchPingRecords(uuid: string, hours: number): Promise<PingRecordsResponse> {
+  if (hours <= denseWindowHours) {
+    return rpc.getClient().call<PingRecordsResponse>('common:getRecords', {
+      uuid,
+      type: 'ping',
+      hours,
+    })
+  }
+
+  const endTime = dayjs()
+  const startTime = endTime.subtract(hours, 'hour')
+  const windowCount = Math.ceil(hours / denseWindowHours)
+  const requests = Array.from({ length: windowCount }, (_, index) => {
+    const windowStart = startTime.add(index * denseWindowHours, 'hour')
+    const windowEnd = startTime.add(Math.min((index + 1) * denseWindowHours, hours), 'hour')
+    return rpc.getClient().call<PingRecordsResponse>('common:getRecords', {
+      uuid,
+      type: 'ping',
+      start: windowStart.toISOString(),
+      end: windowEnd.toISOString(),
+    })
+  })
+  const responses = await Promise.all(requests)
+  const uniqueRecords = new Map<string, PingRecord>()
+
+  for (const response of responses) {
+    for (const record of response.records ?? []) {
+      uniqueRecords.set(`${record.client}:${record.task_id}:${record.time}`, record)
+    }
+  }
+
+  const records = [...uniqueRecords.values()]
+    .sort((a, b) => dayjs(a.time).valueOf() - dayjs(b.time).valueOf())
+  const taskInfo = [...responses]
+    .reverse()
+    .find(response => response.tasks && response.tasks.length > 0)
+    ?.tasks ?? []
+
+  return {
+    count: records.length,
+    records,
+    tasks: summarizeTasks(taskInfo, records),
+    from: startTime.toISOString(),
+    to: endTime.toISOString(),
+  }
+}
+
 // 数据状态
 const remoteData = shallowRef<PingRecord[]>([])
 const tasks = shallowRef<TaskInfo[]>([])
@@ -167,11 +266,7 @@ async function fetchRecords() {
   error.value = null
 
   try {
-    const result = await rpc.getClient().call<PingRecordsResponse>('common:getRecords', {
-      uuid,
-      type: 'ping',
-      hours,
-    })
+    const result = await fetchPingRecords(uuid, hours)
 
     if (requestId !== latestFetchId)
       return
@@ -588,13 +683,14 @@ const blurClass = computed(() => {
 
 <template>
   <div class="ping-chart">
-    <div class="md-control-row">
+    <div class="md-control-row ping-chart__range-row">
       <button
         v-for="view in availableViews"
         :key="view.label"
         class="md-control-button"
         :class="{ 'is-active': selectedView === view.label }"
         type="button"
+        :aria-pressed="selectedView === view.label"
         @click="selectedView = view.label"
       >
         {{ view.label }}
@@ -676,6 +772,12 @@ const blurClass = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.ping-chart__range-row .md-control-button.is-active {
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
 }
 
 .ping-chart__content {

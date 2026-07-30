@@ -18,6 +18,7 @@ export interface MaterialLoadingBarApi {
 export interface MaterialModalOptions {
   title?: string
   content?: () => unknown
+  size?: 'medium' | 'large'
   closable?: boolean
   closeOnEsc?: boolean
   maskClosable?: boolean

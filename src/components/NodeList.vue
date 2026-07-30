@@ -55,6 +55,7 @@ function openPingChart(node: NodeData) {
   window.$modal.create({
     title: `${node.name} - 延迟监控`,
     content: () => h(PingChart, { uuid: node.uuid }),
+    size: 'large',
   })
 }
 

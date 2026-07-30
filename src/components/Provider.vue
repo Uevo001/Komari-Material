@@ -17,6 +17,7 @@ interface ModalState {
   id: number
   title?: string
   content?: () => VNodeChild
+  size: 'medium' | 'large'
   closable: boolean
   closeOnEsc: boolean
   maskClosable: boolean
@@ -134,6 +135,7 @@ function setupMaterialTools() {
         id: ++modalId,
         title: options.title,
         content: options.content as (() => VNodeChild) | undefined,
+        size: options.size ?? 'medium',
         closable: options.closable ?? true,
         closeOnEsc: options.closeOnEsc ?? true,
         maskClosable: options.maskClosable ?? true,
@@ -275,6 +277,7 @@ onUnmounted(() => {
         <section
           ref="modalCard"
           class="material-modal-card"
+          :class="`material-modal-card--${activeModal.size}`"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="activeModal.title ? `material-modal-title-${activeModal.id}` : undefined"
@@ -407,6 +410,11 @@ onUnmounted(() => {
   box-shadow: var(--md-app-elevation-3);
 }
 
+.material-modal-card--large {
+  width: min(1120px, 100%);
+  max-height: min(90vh, 900px);
+}
+
 .material-modal-card__header {
   display: flex;
   min-height: 64px;
@@ -480,6 +488,10 @@ onUnmounted(() => {
   .material-modal-card {
     max-height: 88vh;
     border-radius: 28px 28px 0 0;
+  }
+
+  .material-modal-card--large {
+    max-height: 88vh;
   }
 }
 </style>
