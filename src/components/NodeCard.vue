@@ -80,6 +80,12 @@ const trafficUsed = computed(() => {
   }
 })
 
+const trafficTooltip = computed(() => {
+  const upload = formatBytes(props.node.net_total_up ?? 0)
+  const download = formatBytes(props.node.net_total_down ?? 0)
+  return { upload, download }
+})
+
 const priceTags = computed(() => {
   const tags: Array<{ text: string, color: string }> = []
   const lang = appStore.lang
@@ -270,7 +276,19 @@ function openPingChart() {
             :traffic-limit-type="(props.node.traffic_limit_type || 'sum')"
           />
           <span class="node-card__hint md-number">
-            <template v-if="showTrafficProgress">{{ formatBytes(trafficUsed) }} / {{ formatBytes(props.node.traffic_limit) }}</template>
+            <span v-if="showTrafficProgress" class="node-card__traffic-tooltip" tabindex="0">
+              {{ formatBytes(trafficUsed) }} / {{ formatBytes(props.node.traffic_limit) }}
+              <span class="node-card__traffic-tooltip-content" role="tooltip">
+                <span class="node-card__traffic-tooltip-row node-card__traffic-tooltip-row--upload">
+                  <span>上传</span>
+                  <strong>{{ trafficTooltip.upload }}</strong>
+                </span>
+                <span class="node-card__traffic-tooltip-row node-card__traffic-tooltip-row--download">
+                  <span>下载</span>
+                  <strong>{{ trafficTooltip.download }}</strong>
+                </span>
+              </span>
+            </span>
             <template v-else>
               <span :style="{ color: appStore.trafficSplitColor ? themeColors.success : undefined }">↑ {{ formatBytes(props.node.net_total_up ?? 0) }}</span>
               <span class="node-card__split" />
@@ -427,6 +445,76 @@ function openPingChart() {
   letter-spacing: var(--md-sys-typescale-body-small-tracking);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.node-card__traffic-tooltip {
+  position: relative;
+  display: inline-flex;
+  cursor: help;
+  outline: none;
+}
+
+.node-card__traffic-tooltip-content {
+  position: absolute;
+  z-index: 8;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  display: grid;
+  min-width: 150px;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 10px;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-sys-elevation-level3);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition:
+    opacity var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    transform var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+}
+
+.node-card__traffic-tooltip:hover .node-card__traffic-tooltip-content,
+.node-card__traffic-tooltip:focus-visible .node-card__traffic-tooltip-content {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.node-card__traffic-tooltip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+
+  strong {
+    color: var(--md-sys-color-on-surface);
+    font-weight: 800;
+  }
+}
+
+.node-card__traffic-tooltip-row::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--traffic-row-color);
+}
+
+.node-card__traffic-tooltip-row--upload {
+  --traffic-row-color: var(--md-chart-success);
+  color: var(--md-chart-success);
+}
+
+.node-card__traffic-tooltip-row--download {
+  --traffic-row-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary);
 }
 
 .node-card__split::before {
