@@ -51,8 +51,8 @@ const safePoliceUrl = computed(() => sanitizeNavigationUrl(appStore.policeUrl))
 </script>
 
 <template>
-  <footer class="material-footer" :style="barStyle">
-    <div class="material-footer__inner">
+  <footer class="material-footer">
+    <div class="material-footer__inner" :style="barStyle">
       <div class="material-footer__brand">
         <span class="material-footer__mark" aria-hidden="true">
           <span class="material-symbols-rounded">monitor_heart</span>
@@ -66,11 +66,12 @@ const safePoliceUrl = computed(() => sanitizeNavigationUrl(appStore.policeUrl))
       <div class="material-footer__supporting">
         <nav class="material-footer__links" aria-label="项目链接">
           <a href="https://github.com/komari-monitor/komari" target="_blank" rel="noopener noreferrer">
-            Komari Monitor
+            <span>Komari Monitor</span>
+            <span class="material-symbols-rounded" aria-hidden="true">open_in_new</span>
           </a>
-          <span aria-hidden="true">·</span>
           <a href="https://github.com/Liebesfreud/Komari-Material" target="_blank" rel="noopener noreferrer">
-            GitHub
+            <span>GitHub</span>
+            <span class="material-symbols-rounded" aria-hidden="true">open_in_new</span>
           </a>
         </nav>
 
@@ -104,44 +105,48 @@ const safePoliceUrl = computed(() => sanitizeNavigationUrl(appStore.policeUrl))
 <style scoped lang="scss">
 .material-footer {
   width: 100%;
-  margin: 24px auto 0;
-  padding-inline: 16px;
+  margin: 48px auto 0;
   color: var(--md-sys-color-on-surface-variant);
+  background: transparent;
 }
 
 .material-footer__inner {
   display: flex;
-  gap: 32px;
+  width: 100%;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
-  overflow: hidden;
-  border-radius: 28px 28px 0 0;
-  background: var(--md-sys-color-surface-container-low);
+  gap: 16px 32px;
+  margin: 0 auto;
+  border-top: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 46%, transparent);
+  padding: 20px clamp(16px, 2.4vw, 32px) 28px;
 }
 
 .material-footer__brand {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .material-footer__mark {
   display: inline-grid;
-  width: 44px;
-  height: 44px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 14px;
-  color: var(--md-sys-color-on-secondary-container);
-  background: var(--md-sys-color-secondary-container);
+  border-radius: var(--md-sys-shape-corner-small);
+  color: var(--md-sys-color-on-surface-variant);
+  background: color-mix(in srgb, var(--md-sys-color-on-surface-variant) 8%, transparent);
+  opacity: 0.84;
 }
 
 .material-footer__brand-copy {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
   min-width: 0;
-  gap: 2px;
 }
 
 .material-footer__brand-copy strong {
@@ -161,14 +166,46 @@ const safePoliceUrl = computed(() => sanitizeNavigationUrl(appStore.policeUrl))
 }
 
 .material-footer__supporting {
-  display: grid;
-  justify-items: end;
-  gap: 5px;
-  margin-right: 56px;
-  text-align: right;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 20px;
+  margin-left: auto;
 }
 
-.material-footer__links,
+.material-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  align-items: center;
+}
+
+.material-footer__links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+  text-decoration: none;
+  transition:
+    color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard),
+    text-decoration-color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
+
+  &:hover {
+    color: var(--md-sys-color-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .material-symbols-rounded {
+    font-size: 16px;
+  }
+}
+
 .material-footer__filing {
   display: flex;
   flex-wrap: wrap;
@@ -183,7 +220,6 @@ const safePoliceUrl = computed(() => sanitizeNavigationUrl(appStore.policeUrl))
 .material-footer__version {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 5px;
   font-family: var(--md-app-number-font-family);
   font-size: var(--md-sys-typescale-label-small-size);
@@ -194,28 +230,30 @@ const safePoliceUrl = computed(() => sanitizeNavigationUrl(appStore.policeUrl))
 
 .material-footer a {
   color: var(--md-sys-color-on-surface-variant);
-  font-weight: var(--md-sys-typescale-label-large-weight);
-  text-decoration: none;
   transition: color var(--md-app-motion-duration-short) var(--md-app-motion-easing-standard);
-
-  &:hover {
-    color: var(--md-sys-color-primary);
-    text-decoration: underline;
-  }
 }
 
 @media (max-width: 640px) {
+  .material-footer {
+    margin-top: 40px;
+  }
+
   .material-footer__inner {
+    display: flex;
     flex-direction: column;
-    gap: 20px;
-    align-items: center;
-    padding: 24px 20px;
-    border-radius: 24px 24px 0 0;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 18px 16px 24px;
   }
 
   .material-footer__brand {
-    align-items: center;
-    text-align: left;
+    align-items: flex-start;
+  }
+
+  .material-footer__brand-copy {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 
   .material-footer__brand-copy > span {
@@ -223,15 +261,16 @@ const safePoliceUrl = computed(() => sanitizeNavigationUrl(appStore.policeUrl))
   }
 
   .material-footer__supporting {
-    justify-items: center;
-    margin-right: 0;
-    text-align: center;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-left: 0;
+    text-align: left;
   }
 
-  .material-footer__links,
-  .material-footer__filing,
-  .material-footer__version {
-    justify-content: center;
+  .material-footer__links {
+    justify-content: flex-start;
   }
 }
 </style>
