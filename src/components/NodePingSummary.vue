@@ -498,7 +498,7 @@ const lossToneClass = computed<PingTone>(() => {
   display: grid;
   min-width: 0;
   min-height: 54px;
-  align-content: start;
+  align-content: space-between;
   gap: 5px;
 }
 
@@ -598,7 +598,7 @@ const lossToneClass = computed<PingTone>(() => {
 
 .node-ping-summary--compact .node-ping-summary__speed-pairs {
   min-height: 42px;
-  align-content: start;
+  align-content: space-between;
   gap: 4px;
 }
 
