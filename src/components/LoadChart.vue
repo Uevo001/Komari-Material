@@ -22,14 +22,9 @@ const nodesStore = useNodesStore()
 // 从 publicSettings 获取记录保留时间
 const maxRecordPreserveTime = computed(() => appStore.publicSettings?.record_preserve_time ?? 720)
 
-// 从 publicSettings.theme_settings 获取数据更新间隔（秒），默认 1 秒
+// 使用 store 统一归一化后台数据更新间隔（秒）
 const dataUpdateInterval = computed(() => {
-  const interval = appStore.themeSettings.dataUpdateInterval
-  // 确保值在合理范围内（1-60秒）
-  if (typeof interval === 'number' && interval >= 1 && interval <= 60) {
-    return interval * 1000 // 转换为毫秒
-  }
-  return 1000 // 默认 1 秒
+  return appStore.dataUpdateInterval * 1000
 })
 
 // 使用 store 中的 isDark computed

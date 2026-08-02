@@ -50,7 +50,7 @@ class InitManager {
     this.appStore = useAppStore()
     this.nodesStore = useNodesStore()
     this.stopPollIntervalWatch = watch(
-      () => this.appStore.themeSettings.dataUpdateInterval,
+      () => this.appStore.dataUpdateInterval,
       (nextInterval, previousInterval) => {
         if (nextInterval === previousInterval || !this.pollTimer || this.isDestroyed)
           return
@@ -65,12 +65,7 @@ class InitManager {
    * WebSocket 在这里是 RPC 传输层，不会主动推送节点状态，因此不能降低轮询频率。
    */
   private getPollInterval(): number {
-    const interval = this.appStore.themeSettings.dataUpdateInterval
-    // 确保值在合理范围内（1-60秒）
-    if (typeof interval === 'number' && interval >= 1 && interval <= 60) {
-      return interval * 1000 // 转换为毫秒
-    }
-    return 1000 // 默认 1 秒
+    return this.appStore.dataUpdateInterval * 1000
   }
 
   /**

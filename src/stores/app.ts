@@ -43,6 +43,9 @@ interface AppearanceSettingsOverrides {
 const DEFAULT_FONT_FAMILY = '"Roboto Variable", "Noto Sans SC Variable", sans-serif'
 const DEFAULT_NUMBER_FONT_FAMILY = '"Roboto Variable", "Noto Sans SC Variable", sans-serif'
 const LEGACY_FONT_NAMES = ['MiSans', 'TCloud Number']
+const DEFAULT_DATA_UPDATE_INTERVAL = 1
+const MAX_DATA_UPDATE_INTERVAL = 60
+const MAX_BACKGROUND_BLUR = 40
 
 /** 默认的字节精度配置 */
 const DEFAULT_BYTE_DECIMALS: ByteDecimalsConfig = {
@@ -74,6 +77,29 @@ function normalizeFontFamily(value: unknown, fallback: string): string {
   return LEGACY_FONT_NAMES.some(fontName => value.includes(fontName))
     ? fallback
     : value.trim()
+}
+
+function clampFiniteNumber(value: unknown, fallback: number, min: number, max: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value))
+    return fallback
+
+  return Math.min(max, Math.max(min, value))
+}
+
+function isValidPageWidth(value: string): boolean {
+  const cssApi = typeof CSS !== 'undefined' ? CSS : null
+  if (cssApi?.supports)
+    return cssApi.supports('max-width', value)
+
+  return /^(?:0|(?:\d+(?:\.\d+)?|\.\d+)(?:px|rem|em|vw|vh|vmin|vmax|ch|ex|cm|mm|in|pt|pc|%))$/i.test(value)
+}
+
+function normalizePageWidth(value: unknown, fallback = '1800px'): string {
+  if (typeof value !== 'string')
+    return fallback
+
+  const normalized = value.trim()
+  return normalized && isValidPageWidth(normalized) ? normalized : fallback
 }
 
 function parseThemeSettings(value: unknown): Record<string, unknown> {
@@ -196,6 +222,16 @@ const useAppStore = defineStore('app', () => {
     return 'websocket'
   })
 
+  // 后台 number 字段没有原生范围校验，统一在 store 入口兜底。
+  const dataUpdateInterval = computed<number>(() => {
+    return clampFiniteNumber(
+      themeSettings.value.dataUpdateInterval,
+      DEFAULT_DATA_UPDATE_INTERVAL,
+      DEFAULT_DATA_UPDATE_INTERVAL,
+      MAX_DATA_UPDATE_INTERVAL,
+    )
+  })
+
   // 计算属性：从主题配置获取是否显示登录按钮
   const showLoginButton = computed<boolean>(() => {
     const settings = themeSettings.value
@@ -215,11 +251,7 @@ const useAppStore = defineStore('app', () => {
   })
 
   const maxPageWidth = computed<string>(() => {
-    const settings = themeSettings.value
-    if (settings && typeof settings.maxPageWidth === 'string' && settings.maxPageWidth.trim()) {
-      return settings.maxPageWidth.trim()
-    }
-    return '1800px'
+    return normalizePageWidth(themeSettings.value.maxPageWidth)
   })
 
   const manualMaterialSeedColor = computed<string>(() => {
@@ -548,19 +580,11 @@ const useAppStore = defineStore('app', () => {
   })
 
   const backgroundBlur = computed<number>(() => {
-    const settings = themeSettings.value
-    if (settings && typeof settings.backgroundBlur === 'number' && settings.backgroundBlur >= 0) {
-      return settings.backgroundBlur
-    }
-    return 0
+    return clampFiniteNumber(themeSettings.value.backgroundBlur, 0, 0, MAX_BACKGROUND_BLUR)
   })
 
   const backgroundOverlay = computed<number>(() => {
-    const settings = themeSettings.value
-    if (settings && typeof settings.backgroundOverlay === 'number' && settings.backgroundOverlay >= 0 && settings.backgroundOverlay <= 100) {
-      return settings.backgroundOverlay
-    }
-    return 0
+    return clampFiniteNumber(themeSettings.value.backgroundOverlay, 0, 0, 100)
   })
 
   // 半透明卡片使用独立的背景模糊，确保壁纸清晰度为 0 时仍有足够的文字可读性。
@@ -830,6 +854,7 @@ const useAppStore = defineStore('app', () => {
     nodeViewMode,
     defaultViewMode,
     rpcTransportMode,
+    dataUpdateInterval,
     showLoginButton,
     fullWidth,
     maxPageWidth,
