@@ -227,7 +227,7 @@ function openPingChart() {
             aria-label="CPU"
             :style="{ '--md-linear-progress-active-indicator-color': statusColor(cpuStatus) }"
           />
-          <span class="node-card__hint md-number">{{ node.load.toFixed(2) ?? 0 }}, {{ node.load5.toFixed(2) ?? 0 }}, {{ node.load15.toFixed(2) ?? 0 }}</span>
+          <span class="node-card__hint md-number">{{ (node.load ?? 0).toFixed(2) }}, {{ (node.load5 ?? 0).toFixed(2) }}, {{ (node.load15 ?? 0).toFixed(2) }}</span>
         </div>
 
         <div class="node-card__resource">

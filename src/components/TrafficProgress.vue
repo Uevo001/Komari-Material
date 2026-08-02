@@ -61,18 +61,26 @@ const totalPercentage = computed(() => {
   return Math.min((usedTraffic.value / props.trafficLimit) * 100, 100)
 })
 
+// sum 模式超限时按总流量等比缩放，避免双色段超出进度条。
+// 未超限时保持上传和下载各自相对于总额度的比例。
+const sumOverflowScale = computed(() => {
+  if (props.trafficLimitType !== 'sum' || props.trafficLimit <= 0 || usedTraffic.value <= props.trafficLimit)
+    return 1
+  return props.trafficLimit / usedTraffic.value
+})
+
 // 上传流量百分比（相对于总限制）
 const uploadPercentage = computed(() => {
   if (props.trafficLimit <= 0)
     return 0
-  return Math.min((props.upload / props.trafficLimit) * 100, 100)
+  return Math.min((props.upload / props.trafficLimit) * 100 * sumOverflowScale.value, 100)
 })
 
 // 下载流量百分比（相对于总限制）
 const downloadPercentage = computed(() => {
   if (props.trafficLimit <= 0)
     return 0
-  return Math.min((props.download / props.trafficLimit) * 100, 100)
+  return Math.min((props.download / props.trafficLimit) * 100 * sumOverflowScale.value, 100)
 })
 
 // 是否为双颜色模式

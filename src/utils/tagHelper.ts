@@ -170,7 +170,8 @@ export function getDaysUntilExpired(expiredAt: string | number | undefined): num
   if (!expiredDate.isValid())
     return 0
 
-  return expiredDate.diff(now, 'day')
+  const diffDays = expiredDate.diff(now, 'day', true)
+  return diffDays >= 0 ? Math.ceil(diffDays) : Math.floor(diffDays)
 }
 
 /**
@@ -180,8 +181,9 @@ export function getDaysUntilExpired(expiredAt: string | number | undefined): num
  */
 export function getExpireStatus(expiredAt: string | number | undefined): ExpireStatus {
   const days = getDaysUntilExpired(expiredAt)
+  const expiredDate = dayjs(expiredAt)
 
-  if (days <= 0)
+  if (!expiredDate.isValid() || !expiredDate.isAfter(dayjs()))
     return 'expired'
   if (days <= EXPIRE_THRESHOLDS.critical)
     return 'critical'

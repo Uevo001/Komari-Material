@@ -90,7 +90,7 @@ function getIncludedTaskIds(records: PingRecord[]): Set<number> {
   const summaries = summarizeTaskRecords(records)
   return new Set(
     [...summaries.entries()]
-      .filter(([, summary]) => summary.total > 0 && summary.success > 0)
+      .filter(([, summary]) => summary.total > 0)
       .map(([taskId]) => taskId),
   )
 }
@@ -275,11 +275,12 @@ function buildStats(records: PingRecord[], tasks: PingTaskInfo[]): NodePingStats
       .map(record => record.value)
       .filter(value => value >= 0)
 
+    taskLossValues.push((recordsByTask.length - validValues.length) / recordsByTask.length * 100)
+
     if (!validValues.length)
       continue
 
     latencyValues.push(average(validValues))
-    taskLossValues.push((recordsByTask.length - validValues.length) / recordsByTask.length * 100)
 
     // 波动率 = p99 / p50，仅在样本足够且 p50 远离 0 时计入
     if (validValues.length > 1) {
@@ -332,6 +333,7 @@ export const useNodePingStore = defineStore('nodePing', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const lastFetchedAt = ref(0)
+  const fetchStatus = ref<'idle' | 'success' | 'error'>('idle')
   const subscriberCount = ref(0)
 
   let refreshTimer: ReturnType<typeof setInterval> | null = null
@@ -355,9 +357,11 @@ export const useNodePingStore = defineStore('nodePing', () => {
         recordsByClient.value = buildRecordsByClient(result?.records ?? [])
         tasks.value = result?.tasks ?? []
         lastFetchedAt.value = Date.now()
+        fetchStatus.value = 'success'
       }
       catch (err) {
         error.value = err instanceof Error ? err.message : '获取 Ping 历史失败'
+        fetchStatus.value = 'error'
       }
       finally {
         loading.value = false
@@ -448,6 +452,8 @@ export const useNodePingStore = defineStore('nodePing', () => {
       if (records.length)
         return buildStats(records, tasks.value)
       // 首次加载尚未返回时，读本地缓存避免空状态闪烁
+      if (hours() === PING_STATS_HOURS && fetchStatus.value === 'success')
+        return createEmptyStats()
       return readStatsCache(nodeUuid, hours()) ?? createEmptyStats()
     })
 
